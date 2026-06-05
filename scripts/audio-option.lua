@@ -79,12 +79,16 @@ local function update_chain()
 end
 
 -- Defaults persistence
-local config_dir_raw = mp.command_native({"expand-path", "~~/"})
-local defaults_file = config_dir_raw .. "script-opts/audio-option-defaults.lua"
+local defaults_path = "~~/script-opts/audio-option-defaults.lua"
 
 local function save_defaults()
-    local f = io.open(defaults_file, "w")
-    if not f then return end
+    local path = mp.command_native({"expand-path", defaults_path})
+    local f = io.open(path, "w")
+    if not f then
+        mp.msg.error("Save failed: cannot open " .. path)
+        mp.osd_message("Save failed!", 2)
+        return
+    end
     f:write("return {\n")
     f:write(string.format("    sofalizer = %s,\n", current_sofalizer == "" and "''" or string.format("%q", current_sofalizer)))
     f:write(string.format("    loudnorm = %s,\n", current_loudnorm == "" and "''" or string.format("%q", current_loudnorm)))
@@ -95,7 +99,8 @@ local function save_defaults()
 end
 
 local function load_defaults()
-    local ok, defaults = pcall(dofile, defaults_file)
+    local path = mp.command_native({"expand-path", defaults_path})
+    local ok, defaults = pcall(dofile, path)
     if ok and defaults then
         if defaults.sofalizer then
             current_sofalizer = defaults.sofalizer
@@ -130,7 +135,7 @@ local function show_menu()
         end
         items[#sofa_presets + 1] = (current_sofalizer == "" and "[x] " or "[  ] ") .. "BYPASS"
         items[#sofa_presets + 2] = "───────────────────────────────────"
-        items[#sofa_presets + 3] = "  +  Save as Default"
+        items[#sofa_presets + 3] = "  +  Save Selected as Default"
         items[#sofa_presets + 4] = "  <  Back to Upper Menu"
         items[#sofa_presets + 5] = "  x  Close Menu"
 
@@ -144,7 +149,7 @@ local function show_menu()
             end
         end
         items[#items + 1] = "───────────────────────────────────"
-        items[#items + 1] = "  +  Save as Default"
+        items[#items + 1] = "  +  Save Selected as Default"
         items[#items + 1] = "  <  Back to Upper Menu"
         items[#items + 1] = "  x  Close Menu"
     end
