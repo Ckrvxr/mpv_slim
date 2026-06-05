@@ -1,4 +1,4 @@
--- audio-option.lua — Audio options menu for ModernZ
+-- audio-option.lua — Audio options menu for ModernZ (state machine)
 
 local input = require 'mp.input'
 
@@ -21,7 +21,13 @@ mp.set_property("user-data/sofalizer-SADIEII_D2_48K_24bit_256tap_FIR_SOFA", sofa
 mp.set_property("user-data/sofalizer-SADIEII_D2_48K_24bit_0.3s_FIR_SOFA", sofalizer_SADIEII_D2_48K_24bit_03s_FIR_SOFA)
 mp.set_property("user-data/sofalizer-bypass", "")
 
--- Loudnorm presets (label includes hardcoded params for manual alignment)
+local sofa_presets = {
+    { id = "D1_256tap", label = "SADIEII_D1_48K_24bit_256tap_FIR_SOFA.sofa",    filter = sofalizer_SADIEII_D1_48K_24bit_256tap_FIR_SOFA },
+    { id = "D1_0.3s",   label = "SADIEII_D1_48K_24bit_0.3s_FIR_SOFA.sofa",    filter = sofalizer_SADIEII_D1_48K_24bit_03s_FIR_SOFA },
+    { id = "D2_256tap", label = "SADIEII_D2_48K_24bit_256tap_FIR_SOFA.sofa",    filter = sofalizer_SADIEII_D2_48K_24bit_256tap_FIR_SOFA },
+    { id = "D2_0.3s",   label = "SADIEII_D2_48K_24bit_0.3s_FIR_SOFA.sofa",    filter = sofalizer_SADIEII_D2_48K_24bit_03s_FIR_SOFA },
+}
+
 local loudnorm_presets = {
     { id = "OFF", label = "OFF", filter = "" },
     { cat = "Broadcasting Standards" },
@@ -56,9 +62,9 @@ local loudnorm_presets = {
 }
 
 -- Filter chain state
-local current_sofalizer = ""     -- active sofalizer filter ("" = bypass)
-local current_loudnorm = ""      -- active loudnorm filter string ("" = off)
-local current_loudnorm_id = nil  -- active preset id for checkmark
+local current_sofalizer = ""
+local current_loudnorm = ""
+local current_loudnorm_id = nil
 
 local function update_chain()
     if current_sofalizer == "" and current_loudnorm == "" then
@@ -72,126 +78,93 @@ local function update_chain()
     end
 end
 
-local function apply_sofalizer(sofalizer_str, msg)
-    current_sofalizer = sofalizer_str
-    update_chain()
-    mp.osd_message(msg, 2)
-end
+local menu_state = "main"
 
--- SOFA submenu
-local function show_sofa_menu()
-    input.select({
-        items = {
-            (current_sofalizer:find("D1_48K_24bit_256tap") and "[x] " or "[  ] ") .. "SADIEII_D1_48K_24bit_256tap_FIR_SOFA.sofa",
-            (current_sofalizer:find("D1_48K_24bit_0%.3s") and "[x] " or "[  ] ") .. "SADIEII_D1_48K_24bit_0.3s_FIR_SOFA.sofa",
-            (current_sofalizer:find("D2_48K_24bit_256tap") and "[x] " or "[  ] ") .. "SADIEII_D2_48K_24bit_256tap_FIR_SOFA.sofa",
-            (current_sofalizer:find("D2_48K_24bit_0%.3s") and "[x] " or "[  ] ") .. "SADIEII_D2_48K_24bit_0.3s_FIR_SOFA.sofa",
-            (current_sofalizer == "" and "[x] " or "[  ] ") .. "BYPASS",
-            "───────────────────────────────────",
-            "  <  Back to Upper Menu",
-            "  x  Close Menu",
-        },
-        submit = function(id)
-            if id == 1 then
-                apply_sofalizer(sofalizer_SADIEII_D1_48K_24bit_256tap_FIR_SOFA, "SOFA: D1 256tap (anechoic)")
-                input.terminate()
-                mp.add_timeout(0.05, show_sofa_menu)
-            elseif id == 2 then
-                apply_sofalizer(sofalizer_SADIEII_D1_48K_24bit_03s_FIR_SOFA, "SOFA: D1 0.3s (BBC reverb)")
-                input.terminate()
-                mp.add_timeout(0.05, show_sofa_menu)
-            elseif id == 3 then
-                apply_sofalizer(sofalizer_SADIEII_D2_48K_24bit_256tap_FIR_SOFA, "SOFA: D2 256tap (anechoic)")
-                input.terminate()
-                mp.add_timeout(0.05, show_sofa_menu)
-            elseif id == 4 then
-                apply_sofalizer(sofalizer_SADIEII_D2_48K_24bit_03s_FIR_SOFA, "SOFA: D2 0.3s (BBC reverb)")
-                input.terminate()
-                mp.add_timeout(0.05, show_sofa_menu)
-            elseif id == 5 then
-                current_sofalizer = ""
-                update_chain()
-                mp.osd_message("SOFA: off (native stereo)", 2)
-                input.terminate()
-                mp.add_timeout(0.05, show_sofa_menu)
-            elseif id == 7 then  -- Back (skip separator at 6)
-                input.terminate()
-                mp.add_timeout(0.05, show_main_menu)
-            elseif id == 8 then  -- Close
-                input.terminate()
-            end
-        end,
-    })
-end
-
--- Loudness Normalization submenu
-local function show_loudnorm_menu()
+local function show_menu()
     local items = {}
-    local id_map = {}  -- menu index -> preset table index
+    local id_map = {}
 
-    for i, p in ipairs(loudnorm_presets) do
-        if p.cat then
-            table.insert(items, "── " .. p.cat .. " ──")
-        else
-            local checked = (p.id == current_loudnorm_id) and "[x] " or "[  ] "
-            table.insert(items, checked .. p.label)
-            id_map[#items] = i
-        end
-    end
-
-    table.insert(items, "───────────────────────────────────")
-    table.insert(items, "  <  Back to Upper Menu")
-    table.insert(items, "  x  Close Menu")
-
-    local n_selectable = #items - 3  -- exclude separator, back, close
-
-    input.select({
-        items = items,
-        submit = function(id)
-            local preset_idx = id_map[id]
-            if preset_idx then
-                local p = loudnorm_presets[preset_idx]
-                current_loudnorm = p.filter
-                current_loudnorm_id = p.id
-                update_chain()
-                mp.osd_message("Loudness: " .. p.label, 2)
-                input.terminate()
-                mp.add_timeout(0.05, show_loudnorm_menu)
-            elseif id == n_selectable + 2 then  -- Back (skip separator)
-                input.terminate()
-                mp.add_timeout(0.05, show_main_menu)
-            elseif id == n_selectable + 3 then  -- Close
-                input.terminate()
-            end
-        end,
-    })
-end
-
--- Main menu
-local function show_main_menu()
-    input.select({
+    if menu_state == "main" then
         items = {
             "1. Audio Tracks",
             "2. SOFA Spatial Audio",
             "3. Loudness Normalization",
             "4. EQ Equalizer",
-        },
+        }
+
+    elseif menu_state == "sofa" then
+        for i, p in ipairs(sofa_presets) do
+            items[i] = (current_sofalizer == p.filter and "[x] " or "[  ] ") .. p.label
+        end
+        items[#sofa_presets + 1] = (current_sofalizer == "" and "[x] " or "[  ] ") .. "BYPASS"
+        items[#sofa_presets + 2] = "───────────────────────────────────"
+        items[#sofa_presets + 3] = "  <  Back to Upper Menu"
+        items[#sofa_presets + 4] = "  x  Close Menu"
+
+    elseif menu_state == "loudnorm" then
+        for i, p in ipairs(loudnorm_presets) do
+            if p.cat then
+                items[#items + 1] = "── " .. p.cat .. " ──"
+            else
+                items[#items + 1] = (p.id == current_loudnorm_id and "[x] " or "[  ] ") .. p.label
+                id_map[#items] = i
+            end
+        end
+        items[#items + 1] = "───────────────────────────────────"
+        items[#items + 1] = "  <  Back to Upper Menu"
+        items[#items + 1] = "  x  Close Menu"
+    end
+
+    local function reopen()
+        input.terminate()
+        mp.add_timeout(0.05, show_menu)
+    end
+
+    input.select({
+        items = items,
+        keep_open = true,
         submit = function(id)
-            if id == 1 then
-                mp.osd_message("Audio Tracks: Coming soon", 2)
-                input.terminate()
-            elseif id == 2 then
-                input.terminate()
-                mp.add_timeout(0.05, show_sofa_menu)
-            elseif id == 3 then
-                input.terminate()
-                mp.add_timeout(0.05, show_loudnorm_menu)
-            elseif id == 4 then
-                mp.osd_message("EQ Equalizer: Coming soon", 2)
-                input.terminate()
+            if menu_state == "main" then
+                if id == 2 then
+                    menu_state = "sofa"; reopen()
+                elseif id == 3 then
+                    menu_state = "loudnorm"; reopen()
+                elseif id == 1 or id == 4 then
+                    mp.osd_message("Coming soon", 2)
+                end
+
+            elseif menu_state == "sofa" then
+                local n = #sofa_presets
+                if id >= 1 and id <= n then
+                    current_sofalizer = sofa_presets[id].filter
+                    update_chain()
+                    reopen()
+                elseif id == n + 1 then
+                    current_sofalizer = ""
+                    update_chain()
+                    reopen()
+                elseif id == n + 3 then
+                    menu_state = "main"; reopen()
+                elseif id == n + 4 then
+                    input.terminate()
+                end
+
+            elseif menu_state == "loudnorm" then
+                local preset_idx = id_map[id]
+                if preset_idx then
+                    local p = loudnorm_presets[preset_idx]
+                    current_loudnorm = p.filter
+                    current_loudnorm_id = p.id
+                    update_chain()
+                    reopen()
+                elseif id == #items - 1 then
+                    menu_state = "main"; reopen()
+                elseif id == #items then
+                    input.terminate()
+                end
             end
         end,
     })
 end
 
-mp.register_script_message("audio-option-show-menu", show_main_menu)
+mp.register_script_message("audio-option-show-menu", show_menu)
