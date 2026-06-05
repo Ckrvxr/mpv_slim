@@ -78,6 +78,38 @@ local function update_chain()
     end
 end
 
+-- Defaults persistence
+local config_dir_raw = mp.command_native({"expand-path", "~~/"})
+local defaults_file = config_dir_raw .. "script-opts/audio-option-defaults.lua"
+
+local function save_defaults()
+    local f = io.open(defaults_file, "w")
+    if not f then return end
+    f:write("return {\n")
+    f:write(string.format("    sofalizer = %s,\n", current_sofalizer == "" and "''" or string.format("%q", current_sofalizer)))
+    f:write(string.format("    loudnorm = %s,\n", current_loudnorm == "" and "''" or string.format("%q", current_loudnorm)))
+    f:write(string.format("    loudnorm_id = %s,\n", current_loudnorm_id and string.format("%q", current_loudnorm_id) or "nil"))
+    f:write("}\n")
+    f:close()
+    mp.osd_message("Defaults saved", 2)
+end
+
+local function load_defaults()
+    local ok, defaults = pcall(dofile, defaults_file)
+    if ok and defaults then
+        if defaults.sofalizer then
+            current_sofalizer = defaults.sofalizer
+        end
+        if defaults.loudnorm then
+            current_loudnorm = defaults.loudnorm
+            current_loudnorm_id = defaults.loudnorm_id
+        end
+        if defaults.sofalizer or defaults.loudnorm then
+            update_chain()
+        end
+    end
+end
+
 local menu_state = "main"
 
 local function show_menu()
@@ -98,8 +130,9 @@ local function show_menu()
         end
         items[#sofa_presets + 1] = (current_sofalizer == "" and "[x] " or "[  ] ") .. "BYPASS"
         items[#sofa_presets + 2] = "───────────────────────────────────"
-        items[#sofa_presets + 3] = "  <  Back to Upper Menu"
-        items[#sofa_presets + 4] = "  x  Close Menu"
+        items[#sofa_presets + 3] = "  +  Save as Default"
+        items[#sofa_presets + 4] = "  <  Back to Upper Menu"
+        items[#sofa_presets + 5] = "  x  Close Menu"
 
     elseif menu_state == "loudnorm" then
         for i, p in ipairs(loudnorm_presets) do
@@ -111,6 +144,7 @@ local function show_menu()
             end
         end
         items[#items + 1] = "───────────────────────────────────"
+        items[#items + 1] = "  +  Save as Default"
         items[#items + 1] = "  <  Back to Upper Menu"
         items[#items + 1] = "  x  Close Menu"
     end
@@ -144,8 +178,10 @@ local function show_menu()
                     update_chain()
                     reopen()
                 elseif id == n + 3 then
-                    menu_state = "main"; reopen()
+                    save_defaults()
                 elseif id == n + 4 then
+                    menu_state = "main"; reopen()
+                elseif id == n + 5 then
                     input.terminate()
                 end
 
@@ -157,6 +193,8 @@ local function show_menu()
                     current_loudnorm_id = p.id
                     update_chain()
                     reopen()
+                elseif id == #items - 2 then
+                    save_defaults()
                 elseif id == #items - 1 then
                     menu_state = "main"; reopen()
                 elseif id == #items then
@@ -166,5 +204,7 @@ local function show_menu()
         end,
     })
 end
+
+load_defaults()
 
 mp.register_script_message("audio-option-show-menu", show_menu)
