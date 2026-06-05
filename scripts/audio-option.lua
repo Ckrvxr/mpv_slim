@@ -187,7 +187,7 @@ local function show_menu()
                 elseif id == n + 4 then
                     menu_state = "main"; reopen()
                 elseif id == n + 5 then
-                    input.terminate()
+                    menu_state = "main"; input.terminate()
                 end
 
             elseif menu_state == "loudnorm" then
@@ -203,7 +203,7 @@ local function show_menu()
                 elseif id == #items - 1 then
                     menu_state = "main"; reopen()
                 elseif id == #items then
-                    input.terminate()
+                    menu_state = "main"; input.terminate()
                 end
             end
         end,
