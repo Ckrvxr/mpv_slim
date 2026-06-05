@@ -119,6 +119,12 @@ local user_opts = {
     shuffle_button = false,                -- show shuffle button
     speed_button = true,                   -- show speed control button
 
+    -- modified by mpv_slim: adjust_buttons start
+    audio_adjust_button = true,            -- show audio adjust button
+    video_adjust_button = true,            -- show video adjust button (placeholder)
+    subtitle_adjust_button = true,         -- show subtitle adjust button (placeholder)
+    -- modified by mpv_slim: adjust_buttons end
+
     buttons_always_active = "none",        -- force buttons to always be active. can add: playlist_prev, playlist_next
 
     playpause_size = 28,                   -- icon size for the play/pause button
@@ -381,6 +387,12 @@ local function build_icons(theme_name, style)
 
         zoom_in         = o("zoom_in"),
         zoom_out        = o("zoom_out"),
+
+        -- modified by mpv_slim: adjust_buttons start
+        adjust_audio    = o("surround_sound"),
+        adjust_video    = o("photo_camera"),
+        adjust_subtitle = o("subtitles"),
+        -- modified by mpv_slim: adjust_buttons end
     }
 end
 
@@ -426,6 +438,12 @@ local language = {
         downloading = "Downloading",
         downloaded = "Already downloaded",
         menu = "Menu",
+
+        -- modified by mpv_slim: adjust_buttons start
+        audio_adjust = "Audio Adjust",
+        video_adjust = "Video Adjust",
+        subtitle_adjust = "Subtitle Adjust",
+        -- modified by mpv_slim: adjust_buttons end
     },
 }
 
@@ -2278,7 +2296,13 @@ layouts["default"] = function ()
         end
     end
 
-    if playlist_button then left_side_button("playlist", 550) end
+    -- modified by mpv_slim: adjust_buttons start
+    if playlist_button then left_side_button("playlist", 400) end
+    if user_opts.video_adjust_button then left_side_button("video_adjust", 500) end
+    if user_opts.subtitle_adjust_button then left_side_button("subtitle_adjust", 600) end
+    if user_opts.audio_adjust_button then left_side_button("audio_adjust", 700) end
+    -- modified by mpv_slim: adjust_buttons end
+
     if audio_track and user_opts.audio_tracks_button then left_side_button("audio_track", 650) end
     if subtitle_track and user_opts.subtitles_button then left_side_button("sub_track", 750) end
 
@@ -2573,6 +2597,10 @@ layouts["compact"] = function ()
         left_side_button("jump_forward", 700, 30)
     end
 
+    -- modified by mpv_slim: adjust_buttons start
+    if user_opts.audio_adjust_button then left_side_button("audio_adjust", 750) end
+    -- modified by mpv_slim: adjust_buttons end
+
     if state.audio_track_count > 0 and user_opts.volume_control then
         left_side_button("vol_ctrl", 800, nil, 20)
 
@@ -2747,6 +2775,10 @@ layouts["mini"] = function ()
         left_side_button("jump_backward", 450, 30)
         left_side_button("jump_forward", 450, 30)
     end
+
+    -- modified by mpv_slim: adjust_buttons start
+    if user_opts.audio_adjust_button then left_side_button("audio_adjust", 550) end
+    -- modified by mpv_slim: adjust_buttons end
 
     if state.audio_track_count > 0 and user_opts.volume_control then
         left_side_button("vol_ctrl", 500, nil, 20)
@@ -2947,6 +2979,10 @@ layouts["modern-image"] = function ()
         left_side_button("playlist_prev", 60 - (playlist_button and 0 or 25), 250)
         left_side_button("playlist_next", 90 - (playlist_button and 0 or 25), 250)
     end
+
+    -- modified by mpv_slim: adjust_buttons start
+    if user_opts.audio_adjust_button then left_side_button("audio_adjust", 190 - (playlist_button and 0 or 25) - (track_nextprev_buttons and 0 or 70), 350) end
+    -- modified by mpv_slim: adjust_buttons end
 
     if zoom_control then
         local zoom_vis = osc_param.playresx >= 300
@@ -3285,6 +3321,32 @@ local function osc_init()
     ne.tooltipF = function () return track_tooltip(locale.subtitle, "sub", "sid", state.sub_track_count) end
     ne.nothingavailable = locale.no_subs
     bind_buttons("sub_track")
+
+    -- modified by mpv_slim: adjust_buttons start
+    --audio_adjust
+    ne = new_element("audio_adjust", "button")
+    ne.content = icons.adjust_audio
+    ne.tooltipF = locale.audio_adjust
+    ne.eventresponder["mbtn_left_up"] = function()
+        mp.commandv("script-message", "audio-option-show-menu")
+    end
+
+    --video_adjust
+    ne = new_element("video_adjust", "button")
+    ne.content = icons.adjust_video
+    ne.tooltipF = locale.video_adjust
+    ne.eventresponder["mbtn_left_up"] = function()
+        mp.commandv("script-message", "video-option-show-menu")
+    end
+
+    --subtitle_adjust
+    ne = new_element("subtitle_adjust", "button")
+    ne.content = icons.adjust_subtitle
+    ne.tooltipF = locale.subtitle_adjust
+    ne.eventresponder["mbtn_left_up"] = function()
+        mp.commandv("script-message", "subtitle-option-show-menu")
+    end
+    -- modified by mpv_slim: adjust_buttons end
 
     -- vol_ctrl
     ne = new_element("vol_ctrl", "button")
