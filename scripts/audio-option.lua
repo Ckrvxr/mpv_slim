@@ -207,15 +207,16 @@ local function show_menu()
     elseif menu_state == "sofa" then
         local n = #sofa_presets
         items[1] = (current_sofa_preset == nil and "[x] " or "[  ] ") .. "BYPASS"
-        items[2] = "       Sound Distance: " .. string.format("%.2f", current_sofa_radius)
-        items[3] = "       Gain: " .. tostring(current_sofa_gain) .. " dB"
+        items[2] = "────────────── SOFA Parameters ─────────────"
+        items[3] = "       Sound Distance: " .. string.format("%.2f", current_sofa_radius)
+        items[4] = "       Gain: " .. tostring(current_sofa_gain) .. " dB"
         for i, p in ipairs(sofa_presets) do
-            items[i + 3] = (current_sofa_preset == p.id and "[x] " or "[  ] ") .. p.label
+            items[i + 4] = (current_sofa_preset == p.id and "[x] " or "[  ] ") .. p.label
         end
-        items[n + 4] = "───────────────────────────────────"
-        items[n + 5] = "  +  Save Selected as Default"
-        items[n + 6] = "  <  Back to Upper Menu"
-        items[n + 7] = "  x  Close Menu"
+        items[n + 5] = "───────────────────────────────────"
+        items[n + 6] = "  +  Save as Default"
+        items[n + 7] = "  <  Back to Upper Menu"
+        items[n + 8] = "  x  Close Menu"
 
     elseif menu_state == "sofa_radius" then
         for i = 0, 50 do
@@ -224,9 +225,8 @@ local function show_menu()
             items[i + 1] = (is_selected and "[x] " or "[  ] ") .. string.format("%.2f", v)
         end
         items[52] = "───────────────────────────────────"
-        items[53] = "  +  Save Selected as Default"
-        items[54] = "  <  Back to Upper Menu"
-        items[55] = "  x  Close Menu"
+        items[53] = "  <  Back to Upper Menu"
+        items[54] = "  x  Close Menu"
 
     elseif menu_state == "sofa_gain" then
         for i = 0, 36 do
@@ -234,9 +234,8 @@ local function show_menu()
             items[i + 1] = (is_selected and "[x] " or "[  ] ") .. tostring(i) .. " dB"
         end
         items[38] = "───────────────────────────────────"
-        items[39] = "  +  Save Selected as Default"
-        items[40] = "  <  Back to Upper Menu"
-        items[41] = "  x  Close Menu"
+        items[39] = "  <  Back to Upper Menu"
+        items[40] = "  x  Close Menu"
 
     elseif menu_state == "loudnorm" then
         for i, p in ipairs(loudnorm_presets) do
@@ -251,6 +250,8 @@ local function show_menu()
     elseif menu_state == "audio_tracks" then
         local tracks = mp.get_property_native("track-list")
         local aid = mp.get_property_number("aid", 0)
+        items[#items + 1] = (aid == 0 and "[x] " or "[  ] ") .. "No Audio"
+        id_map[#items] = 0
         for _, t in ipairs(tracks) do
             if t.type == "audio" then
                 local label = t.lang or "unknown"
@@ -260,8 +261,6 @@ local function show_menu()
                 id_map[#items] = t.id
             end
         end
-        items[#items + 1] = (aid == 0 and "[x] " or "[  ] ") .. "No Audio"
-        id_map[#items] = 0
         items[#items + 1] = "───────────────────────────────────"
         items[#items + 1] = "  <  Back to Upper Menu"
         items[#items + 1] = "  x  Close Menu"
@@ -305,20 +304,20 @@ local function show_menu()
                     refresh_sofalizer()
                     update_chain()
                     reopen()
-                elseif id == 2 then
-                    menu_state = "sofa_radius"; reopen()
                 elseif id == 3 then
+                    menu_state = "sofa_radius"; reopen()
+                elseif id == 4 then
                     menu_state = "sofa_gain"; reopen()
-                elseif id >= 4 and id <= n + 3 then
-                    current_sofa_preset = sofa_presets[id - 3].id
+                elseif id >= 5 and id <= n + 4 then
+                    current_sofa_preset = sofa_presets[id - 4].id
                     refresh_sofalizer()
                     update_chain()
                     reopen()
-                elseif id == n + 5 then
-                    save_defaults()
                 elseif id == n + 6 then
-                    menu_state = "main"; reopen()
+                    save_defaults()
                 elseif id == n + 7 then
+                    menu_state = "main"; reopen()
+                elseif id == n + 8 then
                     menu_state = "main"; input.terminate()
                 end
 
@@ -329,11 +328,8 @@ local function show_menu()
                     update_chain()
                     reopen()
                 elseif id == 53 then
-                    save_defaults()
                     menu_state = "sofa"; reopen()
                 elseif id == 54 then
-                    menu_state = "sofa"; reopen()
-                elseif id == 55 then
                     menu_state = "main"; input.terminate()
                 else
                     reopen()
@@ -346,11 +342,8 @@ local function show_menu()
                     update_chain()
                     reopen()
                 elseif id == 39 then
-                    save_defaults()
                     menu_state = "sofa"; reopen()
                 elseif id == 40 then
-                    menu_state = "sofa"; reopen()
-                elseif id == 41 then
                     menu_state = "main"; input.terminate()
                 else
                     reopen()

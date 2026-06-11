@@ -90,6 +90,8 @@ local function show_menu()
     elseif menu_state == "video_tracks" then
         local tracks = mp.get_property_native("track-list")
         local vid = mp.get_property_number("vid", 0)
+        items[#items + 1] = (vid == 0 and "[x] " or "[  ] ") .. "No Video"
+        id_map[#items] = 0
         for _, t in ipairs(tracks) do
             if t.type == "video" then
                 local label = t.lang or "unknown"
@@ -100,81 +102,83 @@ local function show_menu()
                 id_map[#items] = t.id
             end
         end
-        items[#items + 1] = (vid == 0 and "[x] " or "[  ] ") .. "No Video"
-        id_map[#items] = 0
         items[#items + 1] = "───────────────────────────────────"
         items[#items + 1] = "  <  Back to Upper Menu"
         items[#items + 1] = "  x  Close Menu"
 
     elseif menu_state == "style_tweaks" then
-        items[1] = "1. Brightness: " .. tostring(current_brightness)
-        items[2] = "2. Contrast: " .. tostring(current_contrast)
-        items[3] = "3. Saturation: " .. tostring(current_saturation)
-        items[4] = "4. Gamma: " .. tostring(current_gamma)
+        items[1] = "  1. Brightness: " .. tostring(current_brightness)
+        items[2] = "  2. Contrast: " .. tostring(current_contrast)
+        items[3] = "  3. Saturation: " .. tostring(current_saturation)
+        items[4] = "  4. Gamma: " .. tostring(current_gamma)
         items[5] = "───────────────────────────────────"
         items[6] = "  +  Save as Default"
         items[7] = "  <  Back to Upper Menu"
         items[8] = "  x  Close Menu"
 
     elseif menu_state == "brightness" then
-        items[1] = "Current: " .. tostring(current_brightness)
-        items[2] = "+ 100"
-        items[3] = "+ 10"
-        items[4] = "+ 1"
-        items[5] = "- 1"
-        items[6] = "- 10"
-        items[7] = "- 100"
-        items[8] = "───────────────────────────────────"
-        items[9] = "  <  Back to Upper Menu"
-        items[10] = "  x  Close Menu"
+        items[1]  = "  Current Brightness: " .. tostring(current_brightness)
+        items[2]  = "  + 100"
+        items[3]  = "  + 10"
+        items[4]  = "  + 1"
+        items[5]  = "  = 0"
+        items[6]  = "  - 1"
+        items[7]  = "  - 10"
+        items[8]  = "  - 100"
+        items[9]  = "───────────────────────────────────"
+        items[10] = "  <  Back to Upper Menu"
+        items[11] = "  x  Close Menu"
 
     elseif menu_state == "contrast" then
-        items[1] = "Current: " .. tostring(current_contrast)
-        items[2] = "+ 100"
-        items[3] = "+ 10"
-        items[4] = "+ 1"
-        items[5] = "- 1"
-        items[6] = "- 10"
-        items[7] = "- 100"
-        items[8] = "───────────────────────────────────"
-        items[9] = "  <  Back to Upper Menu"
-        items[10] = "  x  Close Menu"
+        items[1]  = "  Current Contrast: " .. tostring(current_contrast)
+        items[2]  = "  + 100"
+        items[3]  = "  + 10"
+        items[4]  = "  + 1"
+        items[5]  = "  = 0"
+        items[6]  = "  - 1"
+        items[7]  = "  - 10"
+        items[8]  = "  - 100"
+        items[9]  = "───────────────────────────────────"
+        items[10] = "  <  Back to Upper Menu"
+        items[11] = "  x  Close Menu"
 
     elseif menu_state == "saturation" then
-        items[1] = "Current: " .. tostring(current_saturation)
-        items[2] = "+ 100"
-        items[3] = "+ 10"
-        items[4] = "+ 1"
-        items[5] = "- 1"
-        items[6] = "- 10"
-        items[7] = "- 100"
-        items[8] = "───────────────────────────────────"
-        items[9] = "  <  Back to Upper Menu"
-        items[10] = "  x  Close Menu"
+        items[1]  = "  Current Saturation: " .. tostring(current_saturation)
+        items[2]  = "  + 100"
+        items[3]  = "  + 10"
+        items[4]  = "  + 1"
+        items[5]  = "  = 0"
+        items[6]  = "  - 1"
+        items[7]  = "  - 10"
+        items[8]  = "  - 100"
+        items[9]  = "───────────────────────────────────"
+        items[10] = "  <  Back to Upper Menu"
+        items[11] = "  x  Close Menu"
 
     elseif menu_state == "gamma" then
-        items[1] = "Current: " .. tostring(current_gamma)
-        items[2] = "+ 100"
-        items[3] = "+ 10"
-        items[4] = "+ 1"
-        items[5] = "- 1"
-        items[6] = "- 10"
-        items[7] = "- 100"
-        items[8] = "───────────────────────────────────"
-        items[9] = "  <  Back to Upper Menu"
-        items[10] = "  x  Close Menu"
+        items[1]  = "  Current Gamma: " .. tostring(current_gamma)
+        items[2]  = "  + 100"
+        items[3]  = "  + 10"
+        items[4]  = "  + 1"
+        items[5]  = "  = 0"
+        items[6]  = "  - 1"
+        items[7]  = "  - 10"
+        items[8]  = "  - 100"
+        items[9]  = "───────────────────────────────────"
+        items[10] = "  <  Back to Upper Menu"
+        items[11] = "  x  Close Menu"
 
     elseif menu_state == "tone_mapping" then
-        items[1] = "1. Tone Map Method: " .. current_tone_map
-        items[2] = "2. Gamut Mapping: " .. current_gamut
-        items[3] = "3. Target Peak: " .. current_target_peak
-        items[4] = "4. Compute Peak: " .. (current_compute_pk and "yes" or "no")
+        items[1]      = "  1. Tone Map Method: " .. current_tone_map
+        items[2]      = "  2. Gamut Mapping: " .. current_gamut
+        items[3]      = "  3. Target Peak: " .. current_target_peak
+        items[4]      = "  4. Compute Peak: " .. (current_compute_pk and "yes" or "no")
         if current_compute_pk then
-            items[5] = "5. Peak Percentile: " .. string.format("%.3f", current_peak_pct)
-            items[6] = "6. Peak Decay Rate: " .. tostring(current_peak_decay)
-            items[7] = "───────────────────────────────────"
-            items[8] = "  +  Save as Default"
-            items[9] = "  <  Back to Upper Menu"
+            items[5]  = "  5. Peak Percentile: " .. string.format("%.3f", current_peak_pct)
+            items[6]  = "  6. Peak Decay Rate: " .. tostring(current_peak_decay)
+            items[7]  = "───────────────────────────────────"
+            items[8]  = "  +  Save as Default"
+            items[9]  = "  <  Back to Upper Menu"
             items[10] = "  x  Close Menu"
         else
             items[5] = "───────────────────────────────────"
@@ -185,7 +189,9 @@ local function show_menu()
 
     elseif menu_state == "tone_map_method" then
         for i, v in ipairs(tone_map_methods) do
-            items[i] = (v == current_tone_map and "[x] " or "[  ] ") .. v
+            local label = v
+            if v == "spline" then label = v .. " (recommend)" end
+            items[i] = (v == current_tone_map and "[x] " or "[  ] ") .. label
         end
         local n = #tone_map_methods
         items[n + 1] = "───────────────────────────────────"
@@ -194,7 +200,9 @@ local function show_menu()
 
     elseif menu_state == "gamut_mapping" then
         for i, v in ipairs(gamut_mappings) do
-            items[i] = (v == current_gamut and "[x] " or "[  ] ") .. v
+            local label = v
+            if v == "perceptual" then label = v .. " (recommend)" end
+            items[i] = (v == current_gamut and "[x] " or "[  ] ") .. label
         end
         local n = #gamut_mappings
         items[n + 1] = "───────────────────────────────────"
@@ -202,41 +210,44 @@ local function show_menu()
         items[n + 3] = "  x  Close Menu"
 
     elseif menu_state == "target_peak" then
-        items[1] = "Current: " .. current_target_peak
-        items[2] = "+ 100"
-        items[3] = "+ 10"
-        items[4] = "+ 1"
-        items[5] = "- 1"
-        items[6] = "- 10"
-        items[7] = "- 100"
-        items[8] = "───────────────────────────────────"
-        items[9] = "Set to auto"
-        items[10] = "  <  Back to Upper Menu"
-        items[11] = "  x  Close Menu"
+        items[1]  = "  Current Target Peak: " .. current_target_peak
+        items[2]  = "  = auto (recommend)"
+        items[3]  = "  + 100"
+        items[4]  = "  + 10"
+        items[5]  = "  + 1"
+        items[6]  = "  = 203 (recommend)"
+        items[7]  = "  = 1000"
+        items[8]  = "  - 1"
+        items[9]  = "  - 10"
+        items[10] = "  - 100"
+        items[11] = "───────────────────────────────────"
+        items[12] = "  <  Back to Upper Menu"
+        items[13] = "  x  Close Menu"
 
     elseif menu_state == "peak_percentile" then
-        items[1] = "Current: " .. string.format("%.3f", current_peak_pct)
-        items[2] = "+ 0.100"
-        items[3] = "+ 0.010"
-        items[4] = "+ 0.001"
-        items[5] = "- 0.001"
-        items[6] = "- 0.010"
-        items[7] = "- 0.100"
-        items[8] = "───────────────────────────────────"
-        items[9] = "  <  Back to Upper Menu"
+        items[1]  = "  Current Peak Percentile: " .. string.format("%.3f", current_peak_pct)
+        items[2]  = "  + 0.100"
+        items[3]  = "  + 0.010"
+        items[4]  = "  + 0.001"
+        items[5]  = "  - 0.001"
+        items[6]  = "  - 0.010"
+        items[7]  = "  - 0.100"
+        items[8]  = "───────────────────────────────────"
+        items[9]  = "  <  Back to Upper Menu"
         items[10] = "  x  Close Menu"
 
     elseif menu_state == "peak_decay_rate" then
-        items[1] = "Current: " .. tostring(current_peak_decay)
-        items[2] = "+ 100"
-        items[3] = "+ 10"
-        items[4] = "+ 1"
-        items[5] = "- 1"
-        items[6] = "- 10"
-        items[7] = "- 100"
-        items[8] = "───────────────────────────────────"
-        items[9] = "  <  Back to Upper Menu"
-        items[10] = "  x  Close Menu"
+        items[1]  = "  Current Peak Decay Rate: " .. tostring(current_peak_decay)
+        items[2]  = "  + 100"
+        items[3]  = "  + 10"
+        items[4]  = "  + 1"
+        items[5]  = "  = 0"
+        items[6]  = "  - 1"
+        items[7]  = "  - 10"
+        items[8]  = "  - 100"
+        items[9]  = "───────────────────────────────────"
+        items[10] = "  <  Back to Upper Menu"
+        items[11] = "  x  Close Menu"
 
     elseif menu_state == "compute_peak" then
         items[1] = (current_compute_pk and "[x] " or "[  ] ") .. "yes"
@@ -297,11 +308,12 @@ local function show_menu()
                 if id == 2 then current_brightness = clamp(current_brightness + 100); mp.set_property_number("brightness", current_brightness); reopen()
                 elseif id == 3 then current_brightness = clamp(current_brightness + 10); mp.set_property_number("brightness", current_brightness); reopen()
                 elseif id == 4 then current_brightness = clamp(current_brightness + 1); mp.set_property_number("brightness", current_brightness); reopen()
-                elseif id == 5 then current_brightness = clamp(current_brightness - 1); mp.set_property_number("brightness", current_brightness); reopen()
-                elseif id == 6 then current_brightness = clamp(current_brightness - 10); mp.set_property_number("brightness", current_brightness); reopen()
-                elseif id == 7 then current_brightness = clamp(current_brightness - 100); mp.set_property_number("brightness", current_brightness); reopen()
-                elseif id == 9 then menu_state = "style_tweaks"; reopen()
-                elseif id == 10 then menu_state = "main"; input.terminate()
+                elseif id == 5 then current_brightness = 0; mp.set_property_number("brightness", 0); reopen()
+                elseif id == 6 then current_brightness = clamp(current_brightness - 1); mp.set_property_number("brightness", current_brightness); reopen()
+                elseif id == 7 then current_brightness = clamp(current_brightness - 10); mp.set_property_number("brightness", current_brightness); reopen()
+                elseif id == 8 then current_brightness = clamp(current_brightness - 100); mp.set_property_number("brightness", current_brightness); reopen()
+                elseif id == 10 then menu_state = "style_tweaks"; reopen()
+                elseif id == 11 then menu_state = "main"; input.terminate()
                 else reopen()
                 end
 
@@ -310,11 +322,12 @@ local function show_menu()
                 if id == 2 then current_contrast = clamp(current_contrast + 100); mp.set_property_number("contrast", current_contrast); reopen()
                 elseif id == 3 then current_contrast = clamp(current_contrast + 10); mp.set_property_number("contrast", current_contrast); reopen()
                 elseif id == 4 then current_contrast = clamp(current_contrast + 1); mp.set_property_number("contrast", current_contrast); reopen()
-                elseif id == 5 then current_contrast = clamp(current_contrast - 1); mp.set_property_number("contrast", current_contrast); reopen()
-                elseif id == 6 then current_contrast = clamp(current_contrast - 10); mp.set_property_number("contrast", current_contrast); reopen()
-                elseif id == 7 then current_contrast = clamp(current_contrast - 100); mp.set_property_number("contrast", current_contrast); reopen()
-                elseif id == 9 then menu_state = "style_tweaks"; reopen()
-                elseif id == 10 then menu_state = "main"; input.terminate()
+                elseif id == 5 then current_contrast = 0; mp.set_property_number("contrast", 0); reopen()
+                elseif id == 6 then current_contrast = clamp(current_contrast - 1); mp.set_property_number("contrast", current_contrast); reopen()
+                elseif id == 7 then current_contrast = clamp(current_contrast - 10); mp.set_property_number("contrast", current_contrast); reopen()
+                elseif id == 8 then current_contrast = clamp(current_contrast - 100); mp.set_property_number("contrast", current_contrast); reopen()
+                elseif id == 10 then menu_state = "style_tweaks"; reopen()
+                elseif id == 11 then menu_state = "main"; input.terminate()
                 else reopen()
                 end
 
@@ -323,11 +336,12 @@ local function show_menu()
                 if id == 2 then current_saturation = clamp(current_saturation + 100); mp.set_property_number("saturation", current_saturation); reopen()
                 elseif id == 3 then current_saturation = clamp(current_saturation + 10); mp.set_property_number("saturation", current_saturation); reopen()
                 elseif id == 4 then current_saturation = clamp(current_saturation + 1); mp.set_property_number("saturation", current_saturation); reopen()
-                elseif id == 5 then current_saturation = clamp(current_saturation - 1); mp.set_property_number("saturation", current_saturation); reopen()
-                elseif id == 6 then current_saturation = clamp(current_saturation - 10); mp.set_property_number("saturation", current_saturation); reopen()
-                elseif id == 7 then current_saturation = clamp(current_saturation - 100); mp.set_property_number("saturation", current_saturation); reopen()
-                elseif id == 9 then menu_state = "style_tweaks"; reopen()
-                elseif id == 10 then menu_state = "main"; input.terminate()
+                elseif id == 5 then current_saturation = 0; mp.set_property_number("saturation", 0); reopen()
+                elseif id == 6 then current_saturation = clamp(current_saturation - 1); mp.set_property_number("saturation", current_saturation); reopen()
+                elseif id == 7 then current_saturation = clamp(current_saturation - 10); mp.set_property_number("saturation", current_saturation); reopen()
+                elseif id == 8 then current_saturation = clamp(current_saturation - 100); mp.set_property_number("saturation", current_saturation); reopen()
+                elseif id == 10 then menu_state = "style_tweaks"; reopen()
+                elseif id == 11 then menu_state = "main"; input.terminate()
                 else reopen()
                 end
 
@@ -336,11 +350,12 @@ local function show_menu()
                 if id == 2 then current_gamma = clamp(current_gamma + 100); mp.set_property_number("gamma", current_gamma); reopen()
                 elseif id == 3 then current_gamma = clamp(current_gamma + 10); mp.set_property_number("gamma", current_gamma); reopen()
                 elseif id == 4 then current_gamma = clamp(current_gamma + 1); mp.set_property_number("gamma", current_gamma); reopen()
-                elseif id == 5 then current_gamma = clamp(current_gamma - 1); mp.set_property_number("gamma", current_gamma); reopen()
-                elseif id == 6 then current_gamma = clamp(current_gamma - 10); mp.set_property_number("gamma", current_gamma); reopen()
-                elseif id == 7 then current_gamma = clamp(current_gamma - 100); mp.set_property_number("gamma", current_gamma); reopen()
-                elseif id == 9 then menu_state = "style_tweaks"; reopen()
-                elseif id == 10 then menu_state = "main"; input.terminate()
+                elseif id == 5 then current_gamma = 0; mp.set_property_number("gamma", 0); reopen()
+                elseif id == 6 then current_gamma = clamp(current_gamma - 1); mp.set_property_number("gamma", current_gamma); reopen()
+                elseif id == 7 then current_gamma = clamp(current_gamma - 10); mp.set_property_number("gamma", current_gamma); reopen()
+                elseif id == 8 then current_gamma = clamp(current_gamma - 100); mp.set_property_number("gamma", current_gamma); reopen()
+                elseif id == 10 then menu_state = "style_tweaks"; reopen()
+                elseif id == 11 then menu_state = "main"; input.terminate()
                 else reopen()
                 end
 
@@ -407,15 +422,17 @@ local function show_menu()
                     current_target_peak = tostring(v)
                     mp.set_property("target-peak", current_target_peak)
                 end
-                if id == 2 then set_peak(get_base() + 100); reopen()
-                elseif id == 3 then set_peak(get_base() + 10); reopen()
-                elseif id == 4 then set_peak(get_base() + 1); reopen()
-                elseif id == 5 then set_peak(get_base() - 1); reopen()
-                elseif id == 6 then set_peak(get_base() - 10); reopen()
-                elseif id == 7 then set_peak(get_base() - 100); reopen()
-                elseif id == 9 then current_target_peak = "auto"; mp.set_property("target-peak", "auto"); reopen()
-                elseif id == 10 then menu_state = "tone_mapping"; reopen()
-                elseif id == 11 then menu_state = "main"; input.terminate()
+                if id == 2 then current_target_peak = "auto"; mp.set_property("target-peak", "auto"); reopen()
+                elseif id == 3 then set_peak(get_base() + 100); reopen()
+                elseif id == 4 then set_peak(get_base() + 10); reopen()
+                elseif id == 5 then set_peak(get_base() + 1); reopen()
+                elseif id == 6 then set_peak(203); reopen()
+                elseif id == 7 then set_peak(1000); reopen()
+                elseif id == 8 then set_peak(get_base() - 1); reopen()
+                elseif id == 9 then set_peak(get_base() - 10); reopen()
+                elseif id == 10 then set_peak(get_base() - 100); reopen()
+                elseif id == 12 then menu_state = "tone_mapping"; reopen()
+                elseif id == 13 then menu_state = "main"; input.terminate()
                 else reopen()
                 end
 

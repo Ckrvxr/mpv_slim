@@ -5,7 +5,7 @@ local input = require 'mp.input'
 local sub_ass_modes = { "force", "yes", "no", "strip" }
 
 local current_sub_scale = mp.get_property_number("sub-scale", 1.0)
-local current_sub_pos   = mp.get_property_number("sub-pos", 100)
+local current_sub_pos   = mp.get_property_number("sub-pos", 90)
 local current_sub_delay = mp.get_property_number("sub-delay", 0.0)
 local current_sub_vis   = mp.get_property_bool("sub-visibility", true)
 local current_sub_ass   = mp.get_property("sub-ass-override", "force")
@@ -63,16 +63,17 @@ local function show_menu()
         end
         items = {
             "1. Subtitle Tracks: " .. current_label,
-            "2. Sub Scale: " .. string.format("%.1f", current_sub_scale),
-            "3. Sub Position: " .. tostring(current_sub_pos),
-            "4. Sub Delay: " .. string.format("%.1f", current_sub_delay) .. "s",
+            "2. Subtitles Scale: " .. string.format("%.1f", current_sub_scale),
+            "3. Subtitles Position: " .. tostring(current_sub_pos),
+            "4. Subtitles Delay: " .. string.format("%.1f", current_sub_delay) .. "s",
             "5. ASS Override: " .. current_sub_ass,
         }
 
     elseif menu_state == "subtitle_tracks" then
-        items[1] = (current_sub_vis and "[x] " or "[  ] ") .. "Sub Visibility: " .. (current_sub_vis and "on" or "off")
         local tracks = mp.get_property_native("track-list")
         local sid = mp.get_property_number("sid", 0)
+        items[1] = (sid == 0 and "[x] " or "[  ] ") .. "No Subtitles"
+        id_map[1] = 0
         for _, t in ipairs(tracks) do
             if t.type == "sub" then
                 local label = t.lang or "unknown"
@@ -82,36 +83,37 @@ local function show_menu()
                 id_map[#items] = t.id
             end
         end
-        items[#items + 1] = (sid == 0 and "[x] " or "[  ] ") .. "No Subtitles"
-        id_map[#items] = 0
         items[#items + 1] = "───────────────────────────────────"
-        items[#items + 1] = "  +  Save as Default"
         items[#items + 1] = "  <  Back to Upper Menu"
         items[#items + 1] = "  x  Close Menu"
 
     elseif menu_state == "sub_scale" then
-        items[1] = "Current: " .. string.format("%.1f", current_sub_scale)
-        items[2] = "+ 0.1"
-        items[3] = "- 0.1"
+        items[1] = "  Current Subtitles Scale: " .. string.format("%.1f", current_sub_scale)
+        items[2] = "  + 0.1"
+        items[3] = "  - 0.1"
         items[4] = "───────────────────────────────────"
         items[5] = "  <  Back to Upper Menu"
         items[6] = "  x  Close Menu"
 
     elseif menu_state == "sub_pos" then
-        items[1] = "Current: " .. tostring(current_sub_pos)
-        items[2] = "+ 1"
-        items[3] = "- 1"
-        items[4] = "───────────────────────────────────"
-        items[5] = "  <  Back to Upper Menu"
-        items[6] = "  x  Close Menu"
+        items[1] = "  Current Subtitles Position: " .. tostring(current_sub_pos)
+        items[2] = "  + 10"
+        items[3] = "  + 1"
+        items[4] = "  = 90"
+        items[5] = "  - 1"
+        items[6] = "  - 10"
+        items[7] = "───────────────────────────────────"
+        items[8] = "  <  Back to Upper Menu"
+        items[9] = "  x  Close Menu"
 
     elseif menu_state == "sub_delay" then
-        items[1] = "Current: " .. string.format("%.1f", current_sub_delay) .. "s"
-        items[2] = "+ 0.1"
-        items[3] = "- 0.1"
-        items[4] = "───────────────────────────────────"
-        items[5] = "  <  Back to Upper Menu"
-        items[6] = "  x  Close Menu"
+        items[1] = "  Current Subtitles Delay: " .. string.format("%.1f", current_sub_delay) .. "s"
+        items[2] = "  + 0.1"
+        items[3] = "  = 0.0"
+        items[4] = "  - 0.1"
+        items[5] = "───────────────────────────────────"
+        items[6] = "  <  Back to Upper Menu"
+        items[7] = "  x  Close Menu"
 
     elseif menu_state == "sub_vis" then
         items[1] = (current_sub_vis and "[x] " or "[  ] ") .. "on"
@@ -155,23 +157,16 @@ local function show_menu()
                 end
 
             elseif menu_state == "subtitle_tracks" then
-                if id == 1 then
-                    current_sub_vis = not current_sub_vis
-                    mp.set_property_bool("sub-visibility", current_sub_vis)
+                local track_id = id_map[id]
+                if track_id ~= nil then
+                    mp.set_property_number("sid", track_id)
+                    mp.set_property_bool("sub-visibility", track_id ~= 0)
+                    current_sub_vis = (track_id ~= 0)
                     reopen()
-                else
-                    local track_id = id_map[id]
-                    if track_id ~= nil then
-                        mp.set_property_number("sid", track_id)
-                        current_sub_vis = (track_id ~= 0)
-                        reopen()
-                    elseif id == #items - 2 then
-                        save_defaults()
-                    elseif id == #items - 1 then
-                        menu_state = "main"; reopen()
-                    elseif id == #items then
-                        menu_state = "main"; input.terminate()
-                    end
+                elseif id == #items - 1 then
+                    menu_state = "main"; reopen()
+                elseif id == #items then
+                    menu_state = "main"; input.terminate()
                 end
 
             elseif menu_state == "sub_scale" then
@@ -193,16 +188,28 @@ local function show_menu()
 
             elseif menu_state == "sub_pos" then
                 if id == 2 then
-                    current_sub_pos = math.min(200, current_sub_pos + 1)
+                    current_sub_pos = math.min(200, current_sub_pos + 10)
                     mp.set_property_number("sub-pos", current_sub_pos)
                     reopen()
                 elseif id == 3 then
+                    current_sub_pos = math.min(200, current_sub_pos + 1)
+                    mp.set_property_number("sub-pos", current_sub_pos)
+                    reopen()
+                elseif id == 4 then
+                    current_sub_pos = 90
+                    mp.set_property_number("sub-pos", 90)
+                    reopen()
+                elseif id == 5 then
                     current_sub_pos = math.max(0, current_sub_pos - 1)
                     mp.set_property_number("sub-pos", current_sub_pos)
                     reopen()
-                elseif id == 5 then
-                    menu_state = "main"; reopen()
                 elseif id == 6 then
+                    current_sub_pos = math.max(0, current_sub_pos - 10)
+                    mp.set_property_number("sub-pos", current_sub_pos)
+                    reopen()
+                elseif id == 8 then
+                    menu_state = "main"; reopen()
+                elseif id == 9 then
                     menu_state = "main"; input.terminate()
                 else
                     reopen()
@@ -214,12 +221,16 @@ local function show_menu()
                     mp.set_property_number("sub-delay", current_sub_delay)
                     reopen()
                 elseif id == 3 then
+                    current_sub_delay = 0.0
+                    mp.set_property_number("sub-delay", 0.0)
+                    reopen()
+                elseif id == 4 then
                     current_sub_delay = math.max(-10.0, current_sub_delay - 0.1)
                     mp.set_property_number("sub-delay", current_sub_delay)
                     reopen()
-                elseif id == 5 then
-                    menu_state = "main"; reopen()
                 elseif id == 6 then
+                    menu_state = "main"; reopen()
+                elseif id == 7 then
                     menu_state = "main"; input.terminate()
                 else
                     reopen()
