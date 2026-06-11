@@ -164,7 +164,25 @@ local function show_menu()
                 elseif id == 7 then
                     input.terminate()
                     mp.add_timeout(0.1, function()
-                        mp.commandv("script_message", "download-subs")
+                        input.select({
+                            items = {
+                                "Simplified Chinese (简化中文)",
+                                "Traditional Chinese (传承中文)",
+                                "Cantonese (粤语)",
+                                "English",
+                                "───────────────────────────────────",
+                                "Cancel",
+                            },
+                            submit = function(lang_id)
+                                local msg
+                                if lang_id == 1 then msg = "onlinesub-zh-simp"
+                                elseif lang_id == 2 then msg = "onlinesub-zh-trad"
+                                elseif lang_id == 3 then msg = "onlinesub-yue"
+                                elseif lang_id == 4 then msg = "onlinesub-en"
+                                end
+                                if msg then mp.commandv("script_message", msg) end
+                            end
+                        })
                     end)
                 end
 
