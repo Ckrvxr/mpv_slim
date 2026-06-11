@@ -68,6 +68,7 @@ local function show_menu()
             "4. Subtitles Delay: " .. string.format("%.1f", current_sub_delay) .. "s",
             "5. ASS Override: " .. current_sub_ass,
             "6. Auto Sync Subtitles to Audio",
+            "7. Auto Download Subtitles",
         }
 
     elseif menu_state == "subtitle_tracks" then
@@ -159,6 +160,11 @@ local function show_menu()
                     input.terminate()
                     mp.add_timeout(0.1, function()
                         mp.commandv("script_message", "sync-to-audio")
+                    end)
+                elseif id == 7 then
+                    input.terminate()
+                    mp.add_timeout(0.1, function()
+                        mp.commandv("script_message", "download-subs")
                     end)
                 end
 
