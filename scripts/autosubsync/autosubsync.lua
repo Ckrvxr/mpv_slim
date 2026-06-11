@@ -536,17 +536,26 @@ init()
 mp.add_key_binding("n", "autosubsync-menu", function() ref_selector:open() end)
 
 -- modified by mpv_slim: direct_sync start
+local function resolve_alass()
+    if not h.is_empty(config.alass_path) and h.file_exists(config.alass_path) then
+        return config.alass_path
+    end
+    local mpv_config = mp.command_native({"expand-path", "~~/"})
+    local platform = mp.get_property("platform")
+    if platform == "windows" then
+        return utils.join_path(mpv_config, "script-opts/alass/alass.bat")
+    elseif platform == "linux" then
+        return utils.join_path(mpv_config, "script-opts/alass/bin/alass-cli-linux")
+    else
+        return "alass-cli"
+    end
+end
+
 mp.register_script_message("sync-to-audio", function()
     ref_selector.selected = 1
     engine_selector.last_choice = "alass"
     if h.is_empty(config.alass_path) or not h.file_exists(config.alass_path) then
-        local mpv_config = mp.command_native({"expand-path", "~~/"})
-        local alass_bat = utils.join_path(mpv_config, "script-opts/alass/alass.bat")
-        if h.file_exists(alass_bat) then
-            config.alass_path = alass_bat
-        else
-            config.alass_path = "alass-cli"
-        end
+        config.alass_path = resolve_alass()
     end
     sync_subtitles()
 end)
