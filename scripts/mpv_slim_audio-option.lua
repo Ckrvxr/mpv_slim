@@ -91,7 +91,7 @@ local loudnorm_presets = {
     { id = "Spotify_Loud",    label = "I=-11.0:TP=-2.0:LRA=8.0           Spotify (Loud)",  filter = "lavfi=[loudnorm=I=-11.0:TP=-2.0:LRA=8.0]" },
     { id = "Spotify_Quiet",   label = "I=-19.0:TP=-1.0:LRA=14.0        Spotify (Quiet)", filter = "lavfi=[loudnorm=I=-19.0:TP=-1.0:LRA=14.0]" },
     { id = "Tidal_HiFi",      label = "I=-14.0:TP=-1.0:LRA=12.0        Tidal HiFi", filter = "lavfi=[loudnorm=I=-14.0:TP=-1.0:LRA=12.0]" },
-    { id = "Cinema_Indie",        label = "I=-18.0:TP=-2.0:LRA=18.0        Cinema / Indie Feature", filter = "lavfi=[loudnorm=I=-18.0:TP=-2.0:LRA=18.0]" },
+    { id = "Dolby_Cinema_Classical",  label = "I=-24.0:TP=-2.0:LRA=20.0        Dolby Cinema / Classical", filter = "lavfi=[loudnorm=I=-24.0:TP=-2.0:LRA=20.0]" },
 }
 
 -- Filter chain state
@@ -144,6 +144,10 @@ local function save_defaults()
     f:write(string.format("    sofa_gain = %s,\n", tostring(current_sofa_gain)))
     local saved_sofalizer = current_sofalizer
     if saved_sofalizer ~= "" then
+        saved_sofalizer = saved_sofalizer:gsub("\\:", ":")
+        saved_sofalizer = saved_sofalizer:gsub("\\,", ",")
+        saved_sofalizer = saved_sofalizer:gsub("\\'", "'")
+        saved_sofalizer = saved_sofalizer:gsub("\\", "/")
         local cfg = mp.command_native({"expand-path", "~~/"})
         cfg = cfg:gsub("\\", "/")
         saved_sofalizer = saved_sofalizer:gsub(cfg:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%1"), "~~/")
