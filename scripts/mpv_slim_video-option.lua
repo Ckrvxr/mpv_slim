@@ -35,13 +35,13 @@ local current_upscaler = detect_current_upscaler()
 
 local function cycle_upscaler()
     local shaders = mp.get_property_native("glsl-shaders") or {}
-    local new_shaders = {}
     for _, s in ipairs(shaders) do
-        local is_upscaler = false
         for _, u in ipairs(upscaler_options) do
-            if s:find(u.file) then is_upscaler = true; break end
+            if s:find(u.file) then
+                mp.commandv("change-list", "glsl-shaders", "remove", s)
+                break
+            end
         end
-        if not is_upscaler then table.insert(new_shaders, s) end
     end
     local next_idx = 1
     for i, u in ipairs(upscaler_options) do
@@ -53,8 +53,7 @@ local function cycle_upscaler()
     end
     local next_upscaler = upscaler_options[next_idx]
     local full_path = mp.command_native({"expand-path", "~~/models/shaders/" .. next_upscaler.file})
-    table.insert(new_shaders, full_path)
-    mp.set_property_native("glsl-shaders", new_shaders)
+    mp.commandv("change-list", "glsl-shaders", "append", full_path)
     current_upscaler = next_upscaler
 end
 
