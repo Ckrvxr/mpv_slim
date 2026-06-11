@@ -46,84 +46,27 @@ local function apply_upscaler(id)
 end
 
 -- Non-Local Means Denoiser
-local nlmeans_cache_dir = "~~/cache/nlmeans/"
-local current_nlmeans_strength = 1.50
-local current_nlmeans_radius = 5
-local current_nlmeans_patch = 3
 local current_nlmeans_on = false
-
-local function ensure_nlmeans_cache_dir()
-    local dir = mp.command_native({"expand-path", nlmeans_cache_dir})
-    os.execute('if not exist "' .. dir .. '" mkdir "' .. dir .. '"')
-end
-
-local function round_s(v)
-    return tonumber(string.format("%.2f", v))
-end
-
-local function generate_nlmeans_variant(s, p, r)
-    local cache_dir = mp.command_native({"expand-path", nlmeans_cache_dir})
-    local s_str = tostring(s)
-    local name = string.format("nlmeans_S%s_P%d_R%d.glsl", s_str, p, r)
-    local cache_path = cache_dir .. "\\" .. name
-    local f = io.open(cache_path, "r")
-    if f then f:close(); return "~~/cache/nlmeans/" .. name end
-    ensure_nlmeans_cache_dir()
-    local base_path = mp.command_native({"expand-path", "~~/models/shaders/nlmeans_luma.glsl"})
-    local base = io.open(base_path, "r")
-    if not base then mp.msg.warn("nlmeans_luma.glsl not found"); return nil end
-    local content = base:read("*a")
-    base:close()
-    content = content:gsub("#define S ([%d.]+)", "#define S " .. s_str)
-    content = content:gsub("#define P (%d+)", "#define P " .. p)
-    content = content:gsub("#define R (%d+)", "#define R " .. r)
-    content = content:gsub("#define AS (%d+)", "#define AS 0")
-    local out = io.open(cache_path, "w")
-    if not out then return nil end
-    out:write(content)
-    out:close()
-    return "~~/cache/nlmeans/" .. name
-end
 
 local function apply_nlmeans_off()
     local shaders = mp.get_property_native("glsl-shaders") or {}
     for _, s in ipairs(shaders) do
-        if s:find("nlmeans_S") then
+        if s:find("nlmeans") then
             mp.commandv("change-list", "glsl-shaders", "remove", s)
         end
     end
     current_nlmeans_on = false
 end
 
-local function apply_nlmeans(s, p, r)
-    apply_nlmeans_off()
-    local cache_path = generate_nlmeans_variant(s, p, r)
-    if cache_path then
-        mp.commandv("change-list", "glsl-shaders", "append", cache_path)
-        current_nlmeans_strength = round_s(s)
-        current_nlmeans_patch = p
-        current_nlmeans_radius = r
-        current_nlmeans_on = true
-    end
-end
-
-local function detect_nlmeans_state()
+local function detect_nlmeans_on()
     local shaders = mp.get_property_native("glsl-shaders") or {}
     for _, s in ipairs(shaders) do
-        local s_str, p_str, r_str = s:match("nlmeans_S([%d.]+)_P(%d+)_R(%d+)")
-        if s_str then
-            current_nlmeans_strength = round_s(tonumber(s_str))
-            current_nlmeans_patch = tonumber(p_str)
-            current_nlmeans_radius = tonumber(r_str)
-            current_nlmeans_on = true
-            return
-        end
+        if s:find("nlmeans") then current_nlmeans_on = true; return end
     end
     current_nlmeans_on = false
 end
 
-detect_nlmeans_state()
-ensure_nlmeans_cache_dir()
+detect_nlmeans_on()
 
 local function apply_props()
     mp.set_property_number("brightness", current_brightness)
@@ -195,7 +138,7 @@ local function show_menu()
             "2. Style Tweaks",
             "3. Tone Mapping",
             "4. Upscaler",
-            "5. Non-Local Means Denoiser",
+            "5. Non-Local Means Denoiser " .. (current_nlmeans_on and "[ON]" or "[OFF]"),
         }
 
     elseif menu_state == "video_tracks" then
@@ -375,36 +318,6 @@ local function show_menu()
         items[n + 1] = "───────────────────────────────────"
         items[n + 2] = "  <  Back to Upper Menu"
         items[n + 3] = "  x  Close Menu"
-
-    elseif menu_state == "nlmeans" then
-        local on_str = current_nlmeans_on and "[x]" or "[  ]"
-        local off_str = current_nlmeans_on and "[  ]" or "[x]"
-        items[1] = "  " .. on_str .. " ON  /  " .. off_str .. " OFF"
-        items[2] = "  ──────  Noise Strength : " .. string.format("%.2f", current_nlmeans_strength) .. "  ──────"
-        items[3] = "  + 0.50"
-        items[4] = "  + 0.25"
-        items[5] = "  + 0.10"
-        items[6] = "  = 2.50 (recommend)"
-        items[7] = "  - 0.10"
-        items[8] = "  - 0.25"
-        items[9] = "  - 0.50"
-        items[10] = "  ────────  Patch Size : " .. current_nlmeans_patch .. "  ────────"
-        local patch_vals = {3, 5, 7}
-        for i, p in ipairs(patch_vals) do
-            local label = tostring(p)
-            if p == 3 then label = label .. " (recommend)" end
-            items[10 + i] = "  " .. (p == current_nlmeans_patch and "[x]" or "[  ]") .. " " .. label
-        end
-        items[14] = "  ───────  Search Radius : " .. current_nlmeans_radius .. "  ───────"
-        local radius_vals = {3, 5, 7, 9, 11}
-        for i, r in ipairs(radius_vals) do
-            local label = tostring(r)
-            if r == 5 then label = label .. " (recommend)" end
-            items[14 + i] = "  " .. (r == current_nlmeans_radius and "[x]" or "[  ]") .. " " .. label
-        end
-        items[20] = "  ───────────────────────"
-        items[21] = "  <  Back to Upper Menu"
-        items[22] = "  x  Close Menu"
     end
 
     local function reopen()
@@ -426,7 +339,14 @@ local function show_menu()
                 elseif id == 4 then
                     menu_state = "upscaler"; reopen()
                 elseif id == 5 then
-                    menu_state = "nlmeans"; reopen()
+                    if current_nlmeans_on then
+                        apply_nlmeans_off()
+                    else
+                        apply_nlmeans_off()
+                        mp.commandv("change-list", "glsl-shaders", "append", "~~/models/shaders/nlmeans.glsl")
+                        current_nlmeans_on = true
+                    end
+                    reopen()
                 end
 
             elseif menu_state == "video_tracks" then
@@ -645,42 +565,6 @@ local function show_menu()
                 elseif id == n + 2 then
                     menu_state = "main"; reopen()
                 elseif id == n + 3 then
-                    menu_state = "main"; input.terminate()
-                else
-                    reopen()
-                end
-
-            elseif menu_state == "nlmeans" then
-                local patch_vals = {3, 5, 7}
-                local radius_vals = {3, 5, 7, 9, 11}
-                if id == 1 then
-                    if current_nlmeans_on then
-                        apply_nlmeans_off()
-                    else
-                        apply_nlmeans(current_nlmeans_strength, current_nlmeans_patch, current_nlmeans_radius)
-                    end
-                    reopen()
-                elseif id == 3 then
-                    apply_nlmeans(round_s(current_nlmeans_strength + 0.50), current_nlmeans_patch, current_nlmeans_radius); reopen()
-                elseif id == 4 then
-                    apply_nlmeans(round_s(current_nlmeans_strength + 0.25), current_nlmeans_patch, current_nlmeans_radius); reopen()
-                elseif id == 5 then
-                    apply_nlmeans(round_s(current_nlmeans_strength + 0.10), current_nlmeans_patch, current_nlmeans_radius); reopen()
-                elseif id == 6 then
-                    apply_nlmeans(2.50, current_nlmeans_patch, current_nlmeans_radius); reopen()
-                elseif id == 7 then
-                    apply_nlmeans(round_s(current_nlmeans_strength - 0.10), current_nlmeans_patch, current_nlmeans_radius); reopen()
-                elseif id == 8 then
-                    apply_nlmeans(round_s(current_nlmeans_strength - 0.25), current_nlmeans_patch, current_nlmeans_radius); reopen()
-                elseif id == 9 then
-                    apply_nlmeans(round_s(current_nlmeans_strength - 0.50), current_nlmeans_patch, current_nlmeans_radius); reopen()
-                elseif id >= 11 and id <= 13 then
-                    apply_nlmeans(current_nlmeans_strength, patch_vals[id - 10], current_nlmeans_radius); reopen()
-                elseif id >= 15 and id <= 19 then
-                    apply_nlmeans(current_nlmeans_strength, current_nlmeans_patch, radius_vals[id - 14]); reopen()
-                elseif id == 21 then
-                    menu_state = "main"; reopen()
-                elseif id == 22 then
                     menu_state = "main"; input.terminate()
                 else
                     reopen()
