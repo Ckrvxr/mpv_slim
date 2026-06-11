@@ -9,6 +9,7 @@ local current_sub_pos   = mp.get_property_number("sub-pos", 90)
 local current_sub_delay = mp.get_property_number("sub-delay", 0.0)
 local current_sub_vis   = mp.get_property_bool("sub-visibility", true)
 local current_sub_ass   = mp.get_property("sub-ass-override", "force")
+local current_secondary_sid = mp.get_property_number("secondary-sid", 0)
 
 local defaults_path = "~~/script-opts/subtitle-option-defaults.lua"
 
@@ -26,6 +27,7 @@ local function save_defaults()
     f:write(string.format("    sub_delay = %s,\n", string.format("%.1f", current_sub_delay)))
     f:write(string.format("    sub_visibility = %s,\n", current_sub_vis and "true" or "false"))
     f:write(string.format("    sub_ass_override = %q,\n", current_sub_ass))
+    f:write(string.format("    secondary_sid = %d,\n", current_secondary_sid))
     f:write("}\n")
     f:close()
     mp.osd_message("Defaults saved", 2)
@@ -40,6 +42,7 @@ local function load_defaults()
         if defaults.sub_delay then current_sub_delay = defaults.sub_delay; mp.set_property_number("sub-delay", current_sub_delay) end
         if defaults.sub_visibility ~= nil then current_sub_vis = defaults.sub_visibility; mp.set_property_bool("sub-visibility", current_sub_vis) end
         if defaults.sub_ass_override then current_sub_ass = defaults.sub_ass_override; mp.set_property("sub-ass-override", current_sub_ass) end
+        if defaults.secondary_sid ~= nil then current_secondary_sid = defaults.secondary_sid; mp.set_property_number("secondary-sid", current_secondary_sid) end
     end
 end
 
@@ -61,16 +64,27 @@ local function show_menu()
                 end
             end
         end
+        local secondary_sid = mp.get_property_number("secondary-sid", 0)
+        local secondary_label = "no"
+        if secondary_sid ~= 0 then
+            for _, t in ipairs(mp.get_property_native("track-list")) do
+                if t.type == "sub" and t.id == secondary_sid then
+                    secondary_label = t.lang or t.title or t.codec or tostring(secondary_sid)
+                    break
+                end
+            end
+        end
         items = {
-            "1. Subtitle Tracks: " .. current_label,
-            "2. Subtitles Scale: " .. string.format("%.1f", current_sub_scale),
-            "3. Subtitles Position: " .. tostring(current_sub_pos),
-            "4. Subtitles Delay: " .. string.format("%.1f", current_sub_delay) .. "s",
-            "5. ASS Override: " .. current_sub_ass,
-            "6. Auto Sync Subtitles to Audio",
+            "1. Primary Subtitles: " .. current_label,
+            "2. Secondary Subtitles: " .. secondary_label,
+            "3. Subtitles Scale: " .. string.format("%.1f", current_sub_scale),
+            "4. Subtitles Position: " .. tostring(current_sub_pos),
+            "5. Subtitles Delay: " .. string.format("%.1f", current_sub_delay) .. "s",
+            "6. ASS Override: " .. current_sub_ass,
+            "7. Auto Sync Subtitles to Audio",
         }
 
-    elseif menu_state == "subtitle_tracks" then
+    elseif menu_state == "primary_tracks" then
         local tracks = mp.get_property_native("track-list")
         local sid = mp.get_property_number("sid", 0)
         items[1] = (sid == 0 and "[x] " or "[  ] ") .. "No Subtitles"
@@ -84,6 +98,32 @@ local function show_menu()
                 id_map[#items] = t.id
             end
         end
+        items[#items + 1] = "───────────────────────────────────"
+        items[#items + 1] = "  + 0.1"
+        items[#items + 1] = "  = 0.0"
+        items[#items + 1] = "  - 0.1"
+        items[#items + 1] = "───────────────────────────────────"
+        items[#items + 1] = "  <  Back to Upper Menu"
+        items[#items + 1] = "  x  Close Menu"
+
+    elseif menu_state == "dual_secondary" then
+        local tracks = mp.get_property_native("track-list")
+        local sec_sid = mp.get_property_number("secondary-sid", 0)
+        items[1] = (sec_sid == 0 and "[x] " or "[  ] ") .. "No Secondary"
+        id_map[1] = 0
+        for _, t in ipairs(tracks) do
+            if t.type == "sub" then
+                local label = t.lang or "unknown"
+                if t.title then label = label .. " - " .. t.title end
+                if t.codec then label = label .. " [" .. t.codec .. "]" end
+                items[#items + 1] = (t.id == sec_sid and "[x] " or "[  ] ") .. t.id .. ". " .. label
+                id_map[#items] = t.id
+            end
+        end
+        items[#items + 1] = "───────────────────────────────────"
+        items[#items + 1] = "  + 0.1"
+        items[#items + 1] = "  = 0.0"
+        items[#items + 1] = "  - 0.1"
         items[#items + 1] = "───────────────────────────────────"
         items[#items + 1] = "  <  Back to Upper Menu"
         items[#items + 1] = "  x  Close Menu"
@@ -146,32 +186,90 @@ local function show_menu()
         submit = function(id)
             if menu_state == "main" then
                 if id == 1 then
-                    menu_state = "subtitle_tracks"; reopen()
+                    menu_state = "primary_tracks"; reopen()
                 elseif id == 2 then
-                    menu_state = "sub_scale"; reopen()
+                    menu_state = "dual_secondary"; reopen()
                 elseif id == 3 then
-                    menu_state = "sub_pos"; reopen()
+                    menu_state = "sub_scale"; reopen()
                 elseif id == 4 then
-                    menu_state = "sub_delay"; reopen()
+                    menu_state = "sub_pos"; reopen()
                 elseif id == 5 then
-                    menu_state = "sub_ass"; reopen()
+                    menu_state = "sub_delay"; reopen()
                 elseif id == 6 then
+                    menu_state = "sub_ass"; reopen()
+                elseif id == 7 then
                     input.terminate()
                     mp.add_timeout(0.1, function()
                         mp.commandv("script_message", "sync-to-audio")
                     end)
                 end
 
-            elseif menu_state == "subtitle_tracks" then
+            elseif menu_state == "primary_tracks" then
+                local n = #items
+                local offset_start = n - 5   -- +0.1
+                local offset_equal = n - 4   -- =0.0
+                local offset_minus = n - 3   -- -0.1
+                local back_id = n - 1
+                local close_id = n
                 local track_id = id_map[id]
                 if track_id ~= nil then
                     mp.set_property_number("sid", track_id)
                     mp.set_property_bool("sub-visibility", track_id ~= 0)
                     current_sub_vis = (track_id ~= 0)
                     reopen()
-                elseif id == #items - 1 then
+                elseif id == offset_start then
+                    current_sub_delay = math.min(10.0, current_sub_delay + 0.1)
+                    mp.set_property_number("sub-delay", current_sub_delay)
+                    reopen()
+                elseif id == offset_equal then
+                    current_sub_delay = 0.0
+                    mp.set_property_number("sub-delay", 0.0)
+                    reopen()
+                elseif id == offset_minus then
+                    current_sub_delay = math.max(-10.0, current_sub_delay - 0.1)
+                    mp.set_property_number("sub-delay", current_sub_delay)
+                    reopen()
+                elseif id == back_id then
                     menu_state = "main"; reopen()
-                elseif id == #items then
+                elseif id == close_id then
+                    menu_state = "main"; input.terminate()
+                end
+
+            elseif menu_state == "dual_secondary" then
+                local n = #items
+                local offset_start = n - 5
+                local offset_equal = n - 4
+                local offset_minus = n - 3
+                local back_id = n - 1
+                local close_id = n
+                local track_id = id_map[id]
+                if track_id ~= nil then
+                    current_secondary_sid = track_id
+                    mp.set_property_number("secondary-sid", track_id)
+                    mp.set_property_bool("secondary-sub-visibility", track_id ~= 0)
+                    if track_id ~= 0 and current_sub_pos > 80 then
+                        mp.set_property_number("sub-pos", 85)
+                        current_sub_pos = 85
+                    elseif track_id == 0 then
+                        mp.set_property_number("sub-pos", 90)
+                        current_sub_pos = 90
+                    end
+                    reopen()
+                elseif id == offset_start then
+                    current_sub_delay = math.min(10.0, current_sub_delay + 0.1)
+                    mp.set_property_number("sub-delay", current_sub_delay)
+                    reopen()
+                elseif id == offset_equal then
+                    current_sub_delay = 0.0
+                    mp.set_property_number("sub-delay", 0.0)
+                    reopen()
+                elseif id == offset_minus then
+                    current_sub_delay = math.max(-10.0, current_sub_delay - 0.1)
+                    mp.set_property_number("sub-delay", current_sub_delay)
+                    reopen()
+                elseif id == back_id then
+                    menu_state = "main"; reopen()
+                elseif id == close_id then
                     menu_state = "main"; input.terminate()
                 end
 
