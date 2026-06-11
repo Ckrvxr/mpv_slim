@@ -4,6 +4,9 @@ local mpopt = require("mp.options")
 
 local config = {
     api_key = "",
+    llm_api_key = "",
+    llm_model = "deepseek-chat",
+    llm_base_url = "https://api.deepseek.com/v1",
     languages = "zh,yue,en",
 }
 mpopt.read_options(config, "mpv_slim_onlinesub")
@@ -24,10 +27,133 @@ local function subprocess(args)
     })
 end
 
+local function clean_filename(name)
+    name = name:gsub("^%[.-%]%s*", "")
+    name = name:gsub("%.[%w]+$", "")
+    name = name:gsub("%d+[kpi]", "")
+    name = name:gsub("[Ss]%d+[Ee]%d+", "")
+    name = name:gsub("[Ee][Pp]%d+", "")
+    name = name:gsub("[Ee]pisode%s*%d+", "")
+    name = name:gsub("Season%s*%d+", "")
+    name = name:gsub("Series%s*%d+", "")
+    name = name:gsub("[%(%[]%d+[% %-%–]+%d+[%)%]]", "")
+    name = name:gsub("[%(%[]%d+[%)%]]", "")
+    name = name:gsub("%f[%w]20[012]%d%f[%D]", "")
+    name = name:gsub("%f[%w]19[789]%d%f[%D]", "")
+    name = name:gsub("WEB%-DL", "", {plain=true})
+    name = name:gsub("WEB[Rr]ip", "")
+    name = name:gsub("Blu[Rr]ay", "")
+    name = name:gsub("BR[Rr]ip", "")
+    name = name:gsub("HDTV", "")
+    name = name:gsub("HD[Rr]ip", "")
+    name = name:gsub("DVDRip", "")
+    name = name:gsub("DVD", "")
+    name = name:gsub("PPV", "")
+    name = name:gsub("HEVC", "")
+    name = name:gsub("AVC", "", {plain=true})
+    name = name:gsub("h265", "")
+    name = name:gsub("h264", "")
+    name = name:gsub("x265", "", {plain=true})
+    name = name:gsub("x264", "", {plain=true})
+    name = name:gsub("%d+bit", "")
+    name = name:gsub("Hi10P", "")
+    name = name:gsub("DDP[%d%.]*", "")
+    name = name:gsub("DD[%d%.]*", "")
+    name = name:gsub("DTS%-HD", "")
+    name = name:gsub("HD%-MA", "")
+    name = name:gsub("AC3", "")
+    name = name:gsub("AAC", "")
+    name = name:gsub("DTS", "")
+    name = name:gsub("TrueHD", "")
+    name = name:gsub("Atmos", "")
+    name = name:gsub("FLAC", "")
+    name = name:gsub("OPUS", "")
+    name = name:gsub("[%d%.]+ch", "")
+    name = name:gsub("%f[%d][%d%.]+%f[%D]", "")
+    name = name:gsub("HDR10", "")
+    name = name:gsub("HDR", "")
+    name = name:gsub("DV", "", {plain=true})
+    name = name:gsub("SDR", "")
+    name = name:gsub("HLG", "")
+    name = name:gsub("PQ", "", {plain=true})
+    name = name:gsub("DoVi", "")
+    name = name:gsub("DolbyVision", "")
+    name = name:gsub("Dual%-Audio", "")
+    name = name:gsub("PROPER", "")
+    name = name:gsub("REPACK", "")
+    name = name:gsub("RERIP", "")
+    name = name:gsub("READNFO", "")
+    name = name:gsub("EXTENDED", "")
+    name = name:gsub("iNTERNAL", "")
+    name = name:gsub("AMZN", "")
+    name = name:gsub("NF", "", {plain=true})
+    name = name:gsub("IMAX", "")
+    name = name:gsub("REMUX", "")
+    name = name:gsub("COMPLETE", "")
+    name = name:gsub("%.[%w]+%-[%w%.]+", "")
+    name = name:gsub("%-[%w]+$", "")
+    name = name:gsub("%s%-%s", " ")
+    name = name:gsub("[%._%-]", " ")
+    name = name:gsub("%s+", " ")
+    name = name:match("^%s*(.-)%s*$") or name
+    return name
+end
+
+local title_cache = {}
+
+local function llm_clean_filename(name)
+    if title_cache[name] then return title_cache[name] end
+    if not config.llm_api_key or config.llm_api_key == "" then
+        mp.msg.warn("No LLM API key, falling back to regex cleaning")
+        return clean_filename(name)
+    end
+
+    local prompt = ("Extract the movie or TV show title from this filename. " ..
+        "Return ONLY the title, nothing else. No explanation. " ..
+        "Filename: %s"):format(name)
+    local escaped = prompt:gsub('"', '\\"'):gsub("\n", "\\n")
+    local body = ('{"model":"%s","messages":[{"role":"user","content":"%s"}],"stream":false,"max_tokens":64}'):format(
+        config.llm_model, escaped)
+
+    local result = subprocess({
+        "curl", "-sL", "--max-time", "10",
+        "-H", "Authorization: Bearer " .. config.llm_api_key,
+        "-H", "Content-Type: application/json",
+        "-d", body,
+        config.llm_base_url .. "/chat/completions",
+    })
+
+    if result.status == 0 and result.stdout then
+        local ok, data = pcall(utils.parse_json, result.stdout)
+        if ok and data and data.choices and data.choices[1] then
+            local title = data.choices[1].message.content
+            if title then
+                title = title:match("^%s*(.-)%s*$") or title
+                if #title > 0 then
+                    title_cache[name] = title
+                    mp.msg.warn("LLM cleaned: " .. name .. " → " .. title)
+                    return title
+                end
+            end
+        end
+    end
+
+    local fallback = clean_filename(name)
+    title_cache[name] = fallback
+    return fallback
+end
+
+local function urlencode(s)
+    return s:gsub("([^%w%.%- ])", function(c) return string.format("%%%02X", c:byte()) end)
+           :gsub(" ", "+")
+end
+
 local function search_subs(query, lang)
+    local cleaned = llm_clean_filename(query)
+    mp.msg.warn("Searching: " .. cleaned)
     local url = string.format(
-        "https://api.opensubtitles.com/api/v1/subtitles?query=%s&languages=%s&type=movie&order_by=download_count&order_direction=desc&limit=20",
-        query, lang
+        "https://api.opensubtitles.com/api/v1/subtitles?query=%s&languages=%s&order_by=download_count&order_direction=desc&limit=20",
+        urlencode(cleaned), lang
     )
     local result = subprocess({
         "curl", "-sL", "--max-time", "15",
