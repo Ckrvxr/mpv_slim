@@ -390,7 +390,7 @@ local function build_icons(theme_name, style)
 
         -- modified by mpv_slim: adjust_buttons start
         adjust_audio    = o("surround_sound"),
-        adjust_video    = o("photo_camera"),
+        adjust_video    = "\239\130\141",
         adjust_subtitle = o("subtitles"),
         -- modified by mpv_slim: adjust_buttons end
     }
