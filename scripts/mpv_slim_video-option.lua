@@ -16,50 +16,43 @@ local current_peak_pct    = mp.get_property_number("hdr-peak-percentile", 99.995
 local current_peak_decay  = mp.get_property_number("hdr-peak-decay-rate", 20)
 local current_compute_pk  = mp.get_property_bool("hdr-compute-peak", true)
 
-local upscaler_shaders = {
-    "ravu-zoom-ar-r3.hook",
-    "ArtCNN_C4F32_DS.glsl",
+local upscaler_options = {
+    { file = "ravu-zoom-ar-r3.hook",    label = "RAVU_Zoom_AR_R3" },
+    { file = "ArtCNN_C4F32_DS.glsl",    label = "ArtCNN_C4F32_DS" },
 }
 
 local function detect_current_upscaler()
     local shaders = mp.get_property_native("glsl-shaders") or {}
     for _, s in ipairs(shaders) do
-        for _, u in ipairs(upscaler_shaders) do
-            if s:find(u) then return u end
+        for _, u in ipairs(upscaler_options) do
+            if s:find(u.file) then return u end
         end
     end
-    return upscaler_shaders[1]
+    return upscaler_options[1]
 end
 
 local current_upscaler = detect_current_upscaler()
-
-local function display_name(path)
-    local name = path:match("(.+)%.[^.]+$") or path
-    name = name:gsub("_C4F32_DS", "")
-    name = name:gsub("-ar%-r3", "")
-    return name
-end
 
 local function cycle_upscaler()
     local shaders = mp.get_property_native("glsl-shaders") or {}
     local new_shaders = {}
     for _, s in ipairs(shaders) do
         local is_upscaler = false
-        for _, u in ipairs(upscaler_shaders) do
-            if s:find(u) then is_upscaler = true; break end
+        for _, u in ipairs(upscaler_options) do
+            if s:find(u.file) then is_upscaler = true; break end
         end
         if not is_upscaler then table.insert(new_shaders, s) end
     end
     local next_idx = 1
-    for i, u in ipairs(upscaler_shaders) do
-        if u == current_upscaler then
+    for i, u in ipairs(upscaler_options) do
+        if u.file == current_upscaler.file then
             next_idx = i + 1
-            if next_idx > #upscaler_shaders then next_idx = 1 end
+            if next_idx > #upscaler_options then next_idx = 1 end
             break
         end
     end
-    local next_upscaler = upscaler_shaders[next_idx]
-    local full_path = mp.command_native({"expand-path", "~~/models/shaders/" .. next_upscaler})
+    local next_upscaler = upscaler_options[next_idx]
+    local full_path = mp.command_native({"expand-path", "~~/models/shaders/" .. next_upscaler.file})
     table.insert(new_shaders, full_path)
     mp.set_property_native("glsl-shaders", new_shaders)
     current_upscaler = next_upscaler
@@ -134,7 +127,7 @@ local function show_menu()
             "1. Video Tracks",
             "2. Style Tweaks",
             "3. Tone Mapping",
-            "4. Upscaler: " .. display_name(current_upscaler),
+            "4. Upscaler: " .. current_upscaler.label,
         }
 
     elseif menu_state == "video_tracks" then
