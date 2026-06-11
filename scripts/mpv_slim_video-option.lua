@@ -343,7 +343,7 @@ local function show_menu()
                         apply_nlmeans_off()
                     else
                         apply_nlmeans_off()
-                        mp.commandv("change-list", "glsl-shaders", "append", "~~/models/shaders/nlmeans.glsl")
+                        mp.commandv("change-list", "glsl-shaders", "append", "~~/models/shaders/nlmeans_sharpen_denoise.glsl")
                         current_nlmeans_on = true
                     end
                     reopen()
