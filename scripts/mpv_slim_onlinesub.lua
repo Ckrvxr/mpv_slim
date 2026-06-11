@@ -36,12 +36,14 @@ local function llm_clean_filename(name)
         return name
     end
 
-    local prompt = ("Extract the movie or TV show title from this filename. " ..
+    local prompt = "Extract the movie or TV show title from this filename. " ..
         "Return ONLY the title, nothing else. No explanation. " ..
-        "Filename: %s"):format(name)
-    local escaped = prompt:gsub('"', '\\"'):gsub("\n", "\\n")
-    local body = ('{"model":"%s","messages":[{"role":"user","content":"%s"}],"stream":false,"max_tokens":64}'):format(
-        config.llm_model, escaped)
+        "Filename: " .. name
+    local function json_escape(s)
+        return s:gsub("\\", "\\\\"):gsub('"', '\\"'):gsub("\n", "\\n"):gsub("\r", "\\r")
+    end
+    local body = '{"model":"' .. json_escape(config.llm_model) .. '","messages":[{"role":"user","content":"' ..
+        json_escape(prompt) .. '"}],"stream":false,"max_tokens":64}'
 
     local ok, result = pcall(subprocess, {
         "curl", "-sL", "--max-time", "10",
@@ -50,22 +52,40 @@ local function llm_clean_filename(name)
         "-d", body,
         config.llm_base_url .. "/chat/completions",
     })
-    if not ok or result.status ~= 0 or not result.stdout then
-        mp.msg.warn("LLM call failed, using raw filename")
+    if not ok then
+        mp.msg.warn("onlinesub: LLM subprocess crashed")
+        return name
+    end
+    if result.status ~= 0 then
+        mp.msg.warn("onlinesub: LLM returned status " .. result.status)
+        return name
+    end
+    if not result.stdout or #result.stdout == 0 then
+        mp.msg.warn("onlinesub: LLM empty response")
         return name
     end
 
     local ok2, data = pcall(utils.parse_json, result.stdout)
-    if ok2 and data and data.choices and data.choices[1] then
-        local title = data.choices[1].message.content
-        if title and #title > 0 then
-            title = title:match("^%s*(.-)%s*$") or title
-            title_cache[name] = title
-            mp.msg.warn("LLM cleaned: " .. name .. " → " .. title)
-            return title
-        end
+    if not ok2 then
+        mp.msg.warn("onlinesub: LLM JSON error, raw: " .. result.stdout:sub(1, 150))
+        return name
+    end
+    if not data.choices or not data.choices[1] then
+        local err = data.error and data.error.message or "no choices"
+        mp.msg.warn("onlinesub: LLM API error: " .. err)
+        return name
     end
 
+    local title = data.choices[1].message.content
+    if title and #title > 0 then
+        title = title:match("^%s*(.-)%s*$") or title
+        title_cache[name] = title
+        mp.msg.info("onlinesub: LLM → " .. title)
+        mp.osd_message("Searching: " .. title, 5)
+        return title
+    end
+
+    mp.msg.warn("onlinesub: LLM returned empty title")
     return name
 end
 
