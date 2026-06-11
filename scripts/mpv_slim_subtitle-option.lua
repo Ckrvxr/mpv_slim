@@ -1,4 +1,4 @@
--- subtitle-option.lua — Subtitle options menu for ModernZ (state machine)
+-- mpv_slim_subtitle-option.lua — Subtitle options menu for ModernZ (state machine)
 
 local input = require 'mp.input'
 
@@ -10,7 +10,7 @@ local current_sub_delay = mp.get_property_number("sub-delay", 0.0)
 local current_sub_vis   = mp.get_property_bool("sub-visibility", true)
 local current_sub_ass   = mp.get_property("sub-ass-override", "force")
 
-local defaults_path = "~~/script-opts/subtitle-option-defaults.lua"
+local defaults_path = "~~/script-opts/mpv_slim_subtitle-option-defaults.lua"
 
 local function save_defaults()
     local path = mp.command_native({"expand-path", defaults_path})
@@ -285,4 +285,4 @@ end
 
 load_defaults()
 
-mp.register_script_message("subtitle-option-show-menu", show_menu)
+mp.register_script_message("mpv_slim_subtitle-option-show-menu", show_menu)

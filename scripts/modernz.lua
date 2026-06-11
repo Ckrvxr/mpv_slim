@@ -3328,7 +3328,7 @@ local function osc_init()
     ne.content = icons.adjust_audio
     ne.tooltipF = locale.audio_adjust
     ne.eventresponder["mbtn_left_up"] = function()
-        mp.commandv("script-message", "audio-option-show-menu")
+        mp.commandv("script-message", "mpv_slim_audio-option-show-menu")
     end
 
     --video_adjust
@@ -3336,7 +3336,7 @@ local function osc_init()
     ne.content = icons.adjust_video
     ne.tooltipF = locale.video_adjust
     ne.eventresponder["mbtn_left_up"] = function()
-        mp.commandv("script-message", "video-option-show-menu")
+        mp.commandv("script-message", "mpv_slim_video-option-show-menu")
     end
 
     --subtitle_adjust
@@ -3344,7 +3344,7 @@ local function osc_init()
     ne.content = icons.adjust_subtitle
     ne.tooltipF = locale.subtitle_adjust
     ne.eventresponder["mbtn_left_up"] = function()
-        mp.commandv("script-message", "subtitle-option-show-menu")
+        mp.commandv("script-message", "mpv_slim_subtitle-option-show-menu")
     end
     -- modified by mpv_slim: adjust_buttons end
 

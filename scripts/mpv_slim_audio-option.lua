@@ -1,4 +1,4 @@
--- audio-option.lua — Audio options menu for ModernZ (state machine)
+-- mpv_slim_audio-option.lua — Audio options menu for ModernZ (state machine)
 
 local input = require 'mp.input'
 local utils = require 'mp.utils'
@@ -128,7 +128,7 @@ local function update_chain()
 end
 
 -- Defaults persistence
-local defaults_path = "~~/script-opts/audio-option-defaults.lua"
+local defaults_path = "~~/script-opts/mpv_slim_audio-option-defaults.lua"
 
 local function save_defaults()
     local path = mp.command_native({"expand-path", defaults_path})
@@ -419,4 +419,4 @@ end
 
 load_defaults()
 
-mp.register_script_message("audio-option-show-menu", show_menu)
+mp.register_script_message("mpv_slim_audio-option-show-menu", show_menu)

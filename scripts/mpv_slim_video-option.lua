@@ -1,4 +1,4 @@
--- video-option.lua — Video options menu for ModernZ (state machine)
+-- mpv_slim_video-option.lua — Video options menu for ModernZ (state machine)
 
 local input = require 'mp.input'
 
@@ -29,7 +29,7 @@ local function apply_props()
     mp.set_property_bool("hdr-compute-peak", current_compute_pk)
 end
 
-local defaults_path = "~~/script-opts/video-option-defaults.lua"
+local defaults_path = "~~/script-opts/mpv_slim_video-option-defaults.lua"
 
 local function save_defaults()
     local path = mp.command_native({"expand-path", defaults_path})
@@ -489,4 +489,4 @@ end
 
 load_defaults()
 
-mp.register_script_message("video-option-show-menu", show_menu)
+mp.register_script_message("mpv_slim_video-option-show-menu", show_menu)
