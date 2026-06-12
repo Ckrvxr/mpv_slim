@@ -343,6 +343,8 @@ local function show_menu()
                     refresh_sofalizer()
                     update_chain()
                     reopen()
+                elseif id == 52 then
+                    reopen()
                 elseif id == 53 then
                     menu_state = "sofa"; reopen()
                 elseif id == 54 then
@@ -356,6 +358,8 @@ local function show_menu()
                     current_sofa_gain = id - 1
                     refresh_sofalizer()
                     update_chain()
+                    reopen()
+                elseif id == 38 then
                     reopen()
                 elseif id == 39 then
                     menu_state = "sofa"; reopen()
