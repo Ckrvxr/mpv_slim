@@ -1,4 +1,4 @@
--- mpv_slim_audio-option.lua — Audio options menu for ModernZ (state machine)
+-- mpv_slim_audio_option.lua — Audio options menu for ModernZ (state machine)
 
 local input = require 'mp.input'
 local utils = require 'mp.utils'
@@ -128,7 +128,7 @@ local function update_chain()
 end
 
 -- Defaults persistence
-local defaults_path = "~~/script-opts/mpv_slim_audio-option-defaults.lua"
+local defaults_path = "~~/script-opts/mpv_slim_audio_option-defaults.lua"
 
 local function save_defaults()
     local path = mp.command_native({"expand-path", defaults_path})
@@ -144,13 +144,10 @@ local function save_defaults()
     f:write(string.format("    sofa_gain = %s,\n", tostring(current_sofa_gain)))
     local saved_sofalizer = current_sofalizer
     if saved_sofalizer ~= "" then
-        saved_sofalizer = saved_sofalizer:gsub("\\:", ":")
-        saved_sofalizer = saved_sofalizer:gsub("\\,", ",")
-        saved_sofalizer = saved_sofalizer:gsub("\\'", "'")
-        saved_sofalizer = saved_sofalizer:gsub("\\", "/")
-        local cfg = mp.command_native({"expand-path", "~~/"})
-        cfg = cfg:gsub("\\", "/")
-        saved_sofalizer = saved_sofalizer:gsub(cfg:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%1"), "~~/")
+        saved_sofalizer = saved_sofalizer:gsub("sofa='([^']+)'", function(path)
+            local filename = path:match("([^/\\]+)$")
+            return "sofa='" .. (filename or path) .. "'"
+        end)
     end
     f:write(string.format("    sofalizer = %s,\n", saved_sofalizer == "" and "''" or string.format("%q", saved_sofalizer)))
     f:write(string.format("    loudnorm = %s,\n", current_loudnorm == "" and "''" or string.format("%q", current_loudnorm)))
@@ -185,7 +182,7 @@ local function load_defaults()
             local saved = defaults.sofalizer
             if saved ~= "" then
                 saved = saved:gsub("sofa='([^']+)'", function(p)
-                    return "sofa='" .. resolve_filter_path(p) .. "'"
+                    return "sofa='" .. resolve_filter_path("~~/models/sofas/" .. p) .. "'"
                 end)
             end
             current_sofalizer = saved
@@ -423,4 +420,4 @@ end
 
 load_defaults()
 
-mp.register_script_message("mpv_slim_audio-option-show-menu", show_menu)
+mp.register_script_message("mpv_slim_audio_option-show-menu", show_menu)

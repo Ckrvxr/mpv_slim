@@ -22,15 +22,15 @@ git clone <repo> ~/.config/mpv
 
 | 菜单 | script-message | 主脚本 |
 |------|---------------|--------|
-| 音频 | `mpv_slim_audio-option-show-menu` | `scripts/mpv_slim_audio-option.lua` |
-| 视频 | `mpv_slim_video-option-show-menu` | `scripts/mpv_slim_video-option.lua` |
-| 字幕 | `mpv_slim_subtitle-option-show-menu` | `scripts/mpv_slim_subtitle-option.lua` |
+| 音频 | `mpv_slim_audio_option-show-menu` | `scripts/mpv_slim_audio_option.lua` |
+| 视频 | `mpv_slim_video_option-show-menu` | `scripts/mpv_slim_video_option.lua` |
+| 字幕 | `mpv_slim_subtitle_option-show-menu` | `scripts/mpv_slim_subtitle_option.lua` |
 
 快捷键调用示例（`input.conf`）：
 ```
-A script-message mpv_slim_audio-option-show-menu
-V script-message mpv_slim_video-option-show-menu
-S script-message mpv_slim_subtitle-option-show-menu
+A script-message mpv_slim_audio_option-show-menu
+V script-message mpv_slim_video_option-show-menu
+S script-message mpv_slim_subtitle_option-show-menu
 ```
 
 ## 跨平台差异
