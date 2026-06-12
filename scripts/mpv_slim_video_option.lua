@@ -137,7 +137,7 @@ local function show_menu()
             "1. Video Tracks",
             "2. Style Tweaks",
             "3. Tone Mapping",
-            "4. Upscaler",
+            "4. Upscaler [" .. current_upscaler.label .. "]",
             "5. Non-Local Means Denoiser " .. (current_nlmeans_on and "[ON]" or "[OFF]"),
         }
 
