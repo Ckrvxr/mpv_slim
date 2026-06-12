@@ -420,4 +420,4 @@ end
 
 load_defaults()
 
-mp.register_script_message("mpv_slim_audio_option-show-menu", show_menu)
+mp.register_script_message("mpv_slim_audio_option_show_menu", show_menu)
