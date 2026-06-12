@@ -17,7 +17,7 @@ local current_peak_decay  = mp.get_property_number("hdr-peak-decay-rate", 20)
 local current_compute_pk  = mp.get_property_bool("hdr-compute-peak", true)
 
 local upscaler_options = {
-    { file = "ravu-zoom-ar-r3.hook",    label = "RAVU_Zoom_AR_R3" },
+    { file = "ravu-zoom-ar-r3-yuv.hook",    label = "RAVU_Zoom_AR_R3_YUV" },
     { file = "ArtCNN_C4F32.glsl",       label = "ArtCNN_C4F32" },
     { file = "ArtCNN_C4F32_DS.glsl",    label = "ArtCNN_C4F32_DS" },
     { file = "ArtCNN_C4F32_DN.glsl",    label = "ArtCNN_C4F32_DN" },
