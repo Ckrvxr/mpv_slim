@@ -253,7 +253,6 @@ local function show_menu()
                     reopen()
                 elseif id == 4 then
                     save_defaults()
-                    menu_state = "main"; reopen()
                 elseif id == 5 then
                     menu_state = "main"; reopen()
                 elseif id == 6 then
@@ -270,7 +269,6 @@ local function show_menu()
                     reopen()
                 elseif id == n + 2 then
                     save_defaults()
-                    menu_state = "main"; reopen()
                 elseif id == n + 3 then
                     menu_state = "main"; reopen()
                 elseif id == n + 4 then
