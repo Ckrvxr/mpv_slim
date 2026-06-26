@@ -17,13 +17,20 @@ local current_peak_decay  = mp.get_property_number("hdr-peak-decay-rate", 20)
 local current_compute_pk  = mp.get_property_bool("hdr-compute-peak", true)
 
 local upscaler_options = {
-    { file = "ravu-zoom-ar-r3-yuv.hook",    label = "RAVU_Zoom_AR_R3_YUV" },
-    { file = "ArtCNN_C4F32.glsl",       label = "ArtCNN_C4F32" },
-    { file = "ArtCNN_C4F32_DS.glsl",    label = "ArtCNN_C4F32_DS" },
-    { file = "ArtCNN_C4F32_DN.glsl",    label = "ArtCNN_C4F32_DN" },
-    { file = "ArtCNN_C4F16.glsl",       label = "ArtCNN_C4F16" },
-    { file = "ArtCNN_C4F16_DS.glsl",    label = "ArtCNN_C4F16_DS" },
-    { file = "ArtCNN_C4F16_DN.glsl",    label = "ArtCNN_C4F16_DN" },
+    { file = "ravu-zoom-ar-r3-yuv.hook",    label = "RAVU_Zoom_AR_R3_YUV",   type = "shader" },
+    { file = "ArtCNN_C4F32.glsl",       label = "ArtCNN_C4F32",              type = "shader" },
+    { file = "ArtCNN_C4F32_DS.glsl",    label = "ArtCNN_C4F32_DS",           type = "shader" },
+    { file = "ArtCNN_C4F32_DN.glsl",    label = "ArtCNN_C4F32_DN",           type = "shader" },
+    { file = "ArtCNN_C4F16.glsl",       label = "ArtCNN_C4F16",              type = "shader" },
+    { file = "ArtCNN_C4F16_DS.glsl",    label = "ArtCNN_C4F16_DS",           type = "shader" },
+    { file = "ArtCNN_C4F16_DN.glsl",    label = "ArtCNN_C4F16_DN",           type = "shader" },
+    -- Traditional built-in scalers
+    { file = nil, label = "Nearest",    type = "builtin", scaler = "nearest" },
+    { file = nil, label = "Bilinear",   type = "builtin", scaler = "bilinear" },
+    { file = nil, label = "Hermite",    type = "builtin", scaler = "hermite" },
+    { file = nil, label = "Mitchell",   type = "builtin", scaler = "mitchell" },
+    { file = nil, label = "Catmull-Rom",type = "builtin", scaler = "catmull_rom" },
+    { file = nil, label = "EWA Lanczos",type = "builtin", scaler = "ewa_lanczos4sharpest" },
 }
 
 local function detect_current_upscaler()
@@ -40,8 +47,15 @@ local current_upscaler = detect_current_upscaler()
 
 local function apply_upscaler(id)
     local selected = upscaler_options[id]
-    mp.commandv("change-list", "glsl-shaders", "remove", "~~/models/shaders/" .. current_upscaler.file)
-    mp.commandv("change-list", "glsl-shaders", "append", "~~/models/shaders/" .. selected.file)
+    if current_upscaler.file then
+        mp.commandv("change-list", "glsl-shaders", "remove", "~~/models/shaders/" .. current_upscaler.file)
+    end
+    if selected.type == "builtin" then
+        mp.set_property("scale", selected.scaler)
+    else
+        mp.set_property("scale", "catmull_rom")
+        mp.commandv("change-list", "glsl-shaders", "append", "~~/models/shaders/" .. selected.file)
+    end
     current_upscaler = selected
 end
 
@@ -91,6 +105,10 @@ local function save_defaults()
         mp.osd_message("Save failed!", 2)
         return
     end
+    local upscaler_id = nil
+    for i, u in ipairs(upscaler_options) do
+        if u == current_upscaler then upscaler_id = i; break end
+    end
     f:write("return {\n")
     f:write(string.format("    brightness = %d,\n", current_brightness))
     f:write(string.format("    contrast = %d,\n", current_contrast))
@@ -102,6 +120,9 @@ local function save_defaults()
     f:write(string.format("    peak_percentile = %s,\n", string.format("%.3f", current_peak_pct)))
     f:write(string.format("    peak_decay_rate = %d,\n", current_peak_decay))
     f:write(string.format("    compute_peak = %s,\n", current_compute_pk and "true" or "false"))
+    if upscaler_id then
+        f:write(string.format("    upscaler_id = %d,\n", upscaler_id))
+    end
     f:write("}\n")
     f:close()
     mp.osd_message("Defaults saved", 2)
@@ -122,6 +143,9 @@ local function load_defaults()
         if defaults.peak_percentile then current_peak_pct = defaults.peak_percentile; changed = true end
         if defaults.peak_decay_rate then current_peak_decay = defaults.peak_decay_rate; changed = true end
         if defaults.compute_peak ~= nil then current_compute_pk = defaults.compute_peak; changed = true end
+        if defaults.upscaler_id and defaults.upscaler_id >= 1 and defaults.upscaler_id <= #upscaler_options then
+            apply_upscaler(defaults.upscaler_id)
+        end
         if changed then apply_props() end
     end
 end
@@ -311,13 +335,19 @@ local function show_menu()
         items[5] = "  x  Close Menu"
 
     elseif menu_state == "upscaler" then
+        local idx = 0
         for i, u in ipairs(upscaler_options) do
-            items[i] = (u.label == current_upscaler.label and "[x] " or "[  ] ") .. u.label
+            if i > 1 and u.type == "builtin" and upscaler_options[i-1].type ~= "builtin" then
+                idx = idx + 1
+                items[idx] = "───────────────────────────────────"
+            end
+            idx = idx + 1
+            items[idx] = (u.label == current_upscaler.label and "[x] " or "[  ] ") .. u.label
         end
-        local n = #upscaler_options
-        items[n + 1] = "───────────────────────────────────"
-        items[n + 2] = "  <  Back to Upper Menu"
-        items[n + 3] = "  x  Close Menu"
+        items[idx + 1] = "───────────────────────────────────"
+        items[idx + 2] = "  +  Save as Default"
+        items[idx + 3] = "  <  Back to Upper Menu"
+        items[idx + 4] = "  x  Close Menu"
     end
 
     local function reopen()
@@ -558,13 +588,23 @@ local function show_menu()
                 end
 
             elseif menu_state == "upscaler" then
-                local n = #upscaler_options
-                if id >= 1 and id <= n then
+                local n_shaders = 0
+                for _, u in ipairs(upscaler_options) do
+                    if u.type ~= "builtin" then n_shaders = n_shaders + 1 else break end
+                end
+                local n_builtins = #upscaler_options - n_shaders
+                if id >= 1 and id <= n_shaders then
                     apply_upscaler(id)
                     reopen()
-                elseif id == n + 2 then
+                elseif id >= n_shaders + 2 and id <= n_shaders + 1 + n_builtins then
+                    apply_upscaler(id - 1)
+                    reopen()
+                elseif id == n_shaders + 3 + n_builtins then
+                    save_defaults()
+                    reopen()
+                elseif id == n_shaders + 4 + n_builtins then
                     menu_state = "main"; reopen()
-                elseif id == n + 3 then
+                elseif id == n_shaders + 5 + n_builtins then
                     menu_state = "main"; input.terminate()
                 else
                     reopen()
