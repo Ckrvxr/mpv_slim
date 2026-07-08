@@ -25,6 +25,9 @@ local upscaler_options = {
     { file = "ArtCNN_C4F16.glsl",       label = "ArtCNN_C4F16",              type = "shader" },
     { file = "ArtCNN_C4F16_DS.glsl",    label = "ArtCNN_C4F16_DS",           type = "shader" },
     { file = "ArtCNN_C4F16_DN.glsl",    label = "ArtCNN_C4F16_DN",           type = "shader" },
+    { file = "ArtCNN_R4F32_YCbCr.glsl",    label = "ArtCNN_R4F32_YCbCr",           type = "shader" },
+    { file = "ArtCNN_R4F32_YCbCr_DS.glsl", label = "ArtCNN_R4F32_YCbCr_DS",        type = "shader" },
+    { file = "ArtCNN_R4F32_YCbCr_DN.glsl", label = "ArtCNN_R4F32_YCbCr_DN",        type = "shader" },
     -- Traditional built-in scalers
     { file = nil, label = "Nearest",    type = "builtin", scaler = "nearest" },
     { file = nil, label = "Bilinear",   type = "builtin", scaler = "bilinear" },
@@ -60,28 +63,6 @@ local function apply_upscaler(id)
     current_upscaler = selected
 end
 
--- Non-Local Means Denoiser
-local current_nlmeans_on = false
-
-local function apply_nlmeans_off()
-    local shaders = mp.get_property_native("glsl-shaders") or {}
-    for _, s in ipairs(shaders) do
-        if s:find("nlmeans") then
-            mp.commandv("change-list", "glsl-shaders", "remove", s)
-        end
-    end
-    current_nlmeans_on = false
-end
-
-local function detect_nlmeans_on()
-    local shaders = mp.get_property_native("glsl-shaders") or {}
-    for _, s in ipairs(shaders) do
-        if s:find("nlmeans") then current_nlmeans_on = true; return end
-    end
-    current_nlmeans_on = false
-end
-
-detect_nlmeans_on()
 
 local function apply_props()
     mp.set_property_number("brightness", current_brightness)
@@ -163,7 +144,6 @@ local function show_menu()
             "2. Style Tweaks",
             "3. Tone Mapping",
             "4. Upscaler [" .. current_upscaler.label .. "]",
-            "5. Non-Local Means Denoiser " .. (current_nlmeans_on and "[ON]" or "[OFF]"),
         }
 
     elseif menu_state == "video_tracks" then
@@ -369,15 +349,7 @@ local function show_menu()
                     menu_state = "tone_mapping"; reopen()
                 elseif id == 4 then
                     menu_state = "upscaler"; reopen()
-                elseif id == 5 then
-                    if current_nlmeans_on then
-                        apply_nlmeans_off()
-                    else
-                        apply_nlmeans_off()
-                        mp.commandv("change-list", "glsl-shaders", "append", "~~/models/shaders/nlmeans_sharpen_denoise.glsl")
-                        current_nlmeans_on = true
-                    end
-                    reopen()
+
                 end
 
             elseif menu_state == "video_tracks" then

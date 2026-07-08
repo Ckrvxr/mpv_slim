@@ -5,9 +5,10 @@ return {
     gamma = 0,
     tone_mapping = "spline",
     gamut_mapping = "perceptual",
-    target_peak = "203",
+    target_peak = "123",
     peak_percentile = 99.995,
     peak_decay_rate = 20,
     compute_peak = true,
     upscaler_id = 1,
+    ambilight_on = false,
 }
