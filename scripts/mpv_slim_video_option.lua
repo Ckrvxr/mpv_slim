@@ -25,9 +25,6 @@ local upscaler_options = {
     { file = "ArtCNN_C4F16.glsl",       label = "ArtCNN_C4F16",              type = "shader" },
     { file = "ArtCNN_C4F16_DS.glsl",    label = "ArtCNN_C4F16_DS",           type = "shader" },
     { file = "ArtCNN_C4F16_DN.glsl",    label = "ArtCNN_C4F16_DN",           type = "shader" },
-    { file = "ArtCNN_R4F32_YCbCr.glsl",    label = "ArtCNN_R4F32_YCbCr",           type = "shader" },
-    { file = "ArtCNN_R4F32_YCbCr_DS.glsl", label = "ArtCNN_R4F32_YCbCr_DS",        type = "shader" },
-    { file = "ArtCNN_R4F32_YCbCr_DN.glsl", label = "ArtCNN_R4F32_YCbCr_DN",        type = "shader" },
     -- Traditional built-in scalers
     { file = nil, label = "Nearest",    type = "builtin", scaler = "nearest" },
     { file = nil, label = "Bilinear",   type = "builtin", scaler = "bilinear" },
@@ -57,7 +54,7 @@ local function apply_upscaler(id)
     if selected.type == "builtin" then
         mp.set_property("scale", selected.scaler)
     else
-        mp.set_property("scale", "catmull_rom")
+        mp.set_property("scale", "ewa_lanczossharp")
         mp.commandv("change-list", "glsl-shaders", "append", "~~/models/shaders/" .. selected.file)
     end
     current_upscaler = selected
