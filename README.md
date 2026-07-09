@@ -10,8 +10,7 @@ MPV Slim 是一个精简但质量不低的 mpv 播放器配置。
 - 响度标准化 -> 防止不同视频音量忽高忽低
 - EQ 均衡器 -> 支撑通用的 APO Eq 曲线，可以校准耳机响应曲线
 - 完美色调映射 -> HDR 到 SDR 的完美亮度和色调映射
-- KrigBilateral + RAVU + ArtCNN -> 顶级视频升频率算法，拒绝破坏创造者意图
-- NLMeans 降噪 -> 提供独立开关的降噪功能，以应对垃圾视频
+- RAVU + SSIM + ArtCNN -> 顶级视频升频率算法，拒绝破坏创造者意图
 - alass -> 全自动同步不对齐的字幕
 
 ## 快捷键
@@ -25,4 +24,4 @@ MPV Slim 是一个精简但质量不低的 mpv 播放器配置。
 
 ## 致谢
 
-ModernZ、thumbfast、alass、an3223（NLMeans）、ArtCNN、RAVU 作者。
+ModernZ、thumbfast、alass、ArtCNN、RAVU 作者。
