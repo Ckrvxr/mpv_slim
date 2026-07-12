@@ -10,5 +10,4 @@ return {
     peak_decay_rate = 20,
     compute_peak = true,
     upscaler_id = 1,
-    ambilight_on = false,
 }
