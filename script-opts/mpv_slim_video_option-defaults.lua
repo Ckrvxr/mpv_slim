@@ -9,5 +9,5 @@ return {
     peak_percentile = 99.995,
     peak_decay_rate = 20,
     compute_peak = true,
-    upscaler_id = 1,
+    upscaler_id = 2,
 }

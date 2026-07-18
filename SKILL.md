@@ -25,6 +25,7 @@ git clone <repo> ~/.config/mpv
 | 音频 | `mpv_slim_audio_option-show-menu` | `scripts/mpv_slim_audio_option.lua` |
 | 视频 | `mpv_slim_video_option-show-menu` | `scripts/mpv_slim_video_option.lua` |
 | 字幕 | `mpv_slim_subtitle_option-show-menu` | `scripts/mpv_slim_subtitle_option.lua` |
+ | 音量记忆 | 自动（无菜单） | `scripts/mpv_slim_volume_memory.lua` |
 
 快捷键调用示例（`input.conf`）：
 ```

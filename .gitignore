@@ -1,2 +1,3 @@
 /cache
 *.7z
+script-opts/mpv_slim_volume_state-defaults.lua
